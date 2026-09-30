@@ -47,7 +47,7 @@ const classThreeBooks = [
   {id:'science',title:'প্রাথমিক বিজ্ঞান',icon:'🔬',hasSolutions:true,solutionStatus:'অধ্যায় ১–১১',link:'https://drive.google.com/file/d/13CfVmYCMfHQYKldvC5MK0OOTIWuOdm9Q/view',preview:'https://drive.google.com/file/d/13CfVmYCMfHQYKldvC5MK0OOTIWuOdm9Q/preview'},
   {id:'islam',title:'ইসলাম শিক্ষা',icon:'☪️',hasSolutions:true,solutionStatus:'অধ্যায় ১–৫',link:'https://drive.google.com/file/d/1isd83RnC8lGCBOjBG-7AUxfyCtgI3vl4/view',preview:'https://drive.google.com/file/d/1isd83RnC8lGCBOjBG-7AUxfyCtgI3vl4/preview'},
   {id:'math',title:'প্রাথমিক গণিত',icon:'➗',hasSolutions:true,solutionStatus:'অধ্যায় ১–১৩',link:'https://drive.google.com/file/d/16boJDg2XlkCER8pF5QkGlrj89ZlLbRQZ/view',preview:'https://drive.google.com/file/d/16boJDg2XlkCER8pF5QkGlrj89ZlLbRQZ/preview'},
-  {id:'english',title:'English For Today',icon:'🔤',hasSolutions:true,solutionStatus:'Unit 1–8 · Lesson 1–41',link:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/view',preview:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/preview'}
+  {id:'english',title:'English For Today',icon:'🔤',hasSolutions:true,solutionStatus:'Unit 1 বিস্তারিত যাচাই · Unit 2–8 পুনর্গঠন চলছে',link:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/view',preview:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/preview'}
 ];
 const classNames = ['প্রথম','দ্বিতীয়','তৃতীয়','চতুর্থ','পঞ্চম','ষষ্ঠ','সপ্তম','অষ্টম','নবম','দশম','একাদশ','দ্বাদশ'];
 const commonBooks = ['বাংলা প্রথম পত্র','বাংলা দ্বিতীয় পত্র','English For Today','গণিত','বিজ্ঞান ও বাংলাদেশ'];
@@ -233,16 +233,70 @@ const bangladeshSolutions = [
 function sourceQuestions(groups){return `<ol class="source-question-list">${groups.map(g=>`<li><b>${g[0]}</b><ol>${g[1].map(x=>`<li>${x[0]}</li>`).join('')}</ol></li>`).join('')}</ol>`}
 function pairedSolutions(groups){return groups.map((g,gi)=>`<div class="qa-group"><h4>${g[0]}</h4>${g[1].map((x,i)=>`<div class="qa-item"><div class="qa-question">প্রশ্ন ${i+1}: ${x[0]}</div><div class="qa-answer"><b>উত্তর:</b> ${x[1]}</div></div>`).join('')}</div>`).join('')}
 function englishLesson(p,unit,lesson,title,questions,answers){return {p:p,l:`Unit ${unit} · Lesson ${lesson}: ${title}`,q:`Lesson ${lesson}`,type:'English practice solution',t:sourceQuestions([['Read and answer',questions]]),a:pairedSolutions([['Answer',answers]])}}
+const englishUnit1Solutions = [
+  {p:1,l:'Unit 1 · Lesson 1: Hello',q:'A–C ও Let’s practise 1',type:'মূল বইয়ের সব কার্যক্রম',t:sourceQuestions([
+    ['মূল বইয়ের কার্যক্রম', [['A. Listen and say: Fatiha ও Sanjoy-এর কথোপকথনটি শুনে বলো।'],['B. Listen and say: Rahat ও Faria-এর কথোপকথনটি শুনে বলো।'],['C. Pairwork: Activity B-এর কথোপকথনটি বন্ধুর সঙ্গে অভিনয় করো।']]],
+    ['Let’s practise', [['1(a). Rana: “Good morning. What’s your name?” Sima-এর দুটি শূন্যস্থান পূরণ করো।'],['1(b). Sarah ও Manik-এর কথোপকথনের তিনটি শূন্যস্থান পূরণ করো।']]]
+  ]),a:pairedSolutions([
+    ['মূল বইয়ের কার্যক্রম', [['A. কথোপকথন','Fatiha: <b>Good morning. What’s your name?</b><br>Sanjoy: <b>Good morning. My name’s Sanjoy.</b><br>Fatiha: <b>How are you?</b><br>Sanjoy: <b>I’m good, thanks. And you?</b><br>Fatiha: <b>I’m also good.</b>'],['B. কথোপকথন','Rahat: <b>Hello, Faria. How are you?</b><br>Faria: <b>Hi, Rahat. I’m fine. Thank you.</b>'],['C. Pairwork','বইয়ের Activity B-এর দুটি ভূমিকা পালা করে বলবে। যেমন: “Hello, Rafi. How are you?” — “Hi, Mina. I’m fine. Thank you.”']]],
+    ['Let’s practise', [['1(a). শূন্যস্থান পূরণ','Sima: <b>Good morning</b>, My name’s <b>Sima</b>.'],['1(b). শূন্যস্থান পূরণ','Sarah: <b>Good morning</b>, What’s your name?<br>Manik: <b>Good morning</b>, My name’s <b>Manik</b>.']]]
+  ])},
+  {p:3,l:'Unit 1 · Lesson 2: Talking about myself',q:'A–C ও Let’s practise 1–2',type:'মূল বইয়ের সব কার্যক্রম',t:sourceQuestions([
+    ['মূল বইয়ের কার্যক্রম', [['A. Chain drill: নিজের নাম, পছন্দের খেলা, রং ও ফুল বলে শূন্যস্থান পূরণ করো।'],['B. Sakiba ও Zahid-এর কথোপকথনটি শুনে বলো।'],['C. Activity B-এর কথোপকথনটি বন্ধুর সঙ্গে অভিনয় করো।']]],
+    ['Let’s practise', [['1. favourite শব্দের সঠিক অর্থে টিক দাও।'],['2. game শব্দের সঠিক অর্থে টিক দাও।'],['3(a). What is Zahid’s favourite game?'],['3(b). What is Sakiba’s favourite subject?'],['3(c). What do Zahid and Sakiba talk about?']]]
+  ]),a:pairedSolutions([
+    ['মূল বইয়ের কার্যক্রম', [['A. Chain drill-এর নমুনা','<b>Rima is my name. Football is my game. Red is my colour. Rose is my flower.</b><br>নিজের পছন্দ অনুযায়ী নাম ও শব্দ বদলে বলবে।'],['B. কথোপকথন','Sakiba: <b>Hello, Zahid. What’s your favourite game?</b><br>Zahid: <b>Hi, Sakiba! Cricket is my favourite game. And yours?</b><br>Sakiba: <b>I like to play football.</b><br>Zahid: <b>What’s your favourite subject, Sakiba?</b><br>Sakiba: <b>English is my favourite subject.</b><br>Zahid: <b>Oh, I like English, too.</b>'],['C. Pairwork','একজন Sakiba এবং অন্যজন Zahid হয়ে উপরের কথোপকথনটি বলবে।']]],
+    ['Let’s practise', [['1. favourite-এর অর্থ','<b>most liked</b>'],['2. game-এর অর্থ','<b>sport</b>'],['3(a). Zahid’s favourite game','Zahid’s favourite game is <b>cricket</b>.'],['3(b). Sakiba’s favourite subject','Sakiba’s favourite subject is <b>English</b>.'],['3(c). They talk about','They talk about their <b>favourite game and favourite subject</b>.']]]
+  ])},
+  {p:6,l:'Unit 1 · Lesson 3: Greetings',q:'A–C',type:'মূল বইয়ের সব কার্যক্রম',t:sourceQuestions([
+    ['মূল বইয়ের কার্যক্রম', [['A. শিক্ষকের সঙ্গে সকালের শুভেচ্ছা বিনিময় শুনে বলো।'],['B. শিক্ষকের সঙ্গে বিকেলের শুভেচ্ছা বিনিময় শুনে বলো।'],['C. Rahat, Faria ও Rita-এর কথোপকথনটি দেখে, শুনে বলো।']]]
+  ]),a:pairedSolutions([
+    ['মূল বইয়ের কার্যক্রম', [['A. সকালের শুভেচ্ছা','Teacher: <b>Good morning, students.</b><br>Students: <b>Good morning, teacher.</b>'],['B. বিকেলের শুভেচ্ছা','Teacher: <b>Hello students, good afternoon.</b><br>Students: <b>Good afternoon, teacher.</b>'],['C. কথোপকথন','Rahat: <b>Good evening, Faria.</b><br>Faria: <b>Good evening, Rahat.</b><br>Rahat: <b>Who is she?</b><br>Faria: <b>She is my cousin, Rita. And Rita, he is my friend, Rahat.</b><br>Rita: <b>Nice to meet you.</b><br>Rahat: <b>Nice meeting you, too.</b>']]]
+  ])},
+  {p:8,l:'Unit 1 · Lesson 4: Goodbye 1',q:'A–D',type:'মূল বইয়ের সব কার্যক্রম',t:sourceQuestions([
+    ['মূল বইয়ের কার্যক্রম', [['A. ছবি দেখে বিদায়ের বাক্যটি শুনে বলো।'],['B. শিক্ষক ও Ripa-এর বিদায়ের বাক্যটি শুনে বলো।'],['C. Rahat ও Namira-এর কথোপকথনটি শুনে বলো।'],['D. Activity C-এর কথোপকথনটি বন্ধুর সঙ্গে অভিনয় করো।']]]
+  ]),a:pairedSolutions([
+    ['মূল বইয়ের কার্যক্রম', [['A. বিদায়ের বাক্য','<b>Goodbye, students. It’s time to go.</b>'],['B. বিদায়ের উত্তর','Teacher: <b>Goodbye, Ripa.</b><br>Ripa: <b>Goodbye, teacher.</b>'],['C. কথোপকথন','Rahat: <b>Hello Namira, how are you?</b><br>Namira: <b>I’m fine, thanks. And you?</b><br>Rahat: <b>I’m good. Where are you going?</b><br>Namira: <b>I’m going to buy some medicines.</b><br>Rahat: <b>Okay, goodbye. See you later.</b><br>Namira: <b>Goodbye!</b>'],['D. Pairwork','একজন Rahat এবং অন্যজন Namira হয়ে Activity C-এর কথোপকথনটি অভিনয় করবে।']]]
+  ])},
+  {p:10,l:'Unit 1 · Lesson 5: Goodbye 2',q:'A–C ও Let’s practise 1–2',type:'মূল বইয়ের সব কার্যক্রম',t:sourceQuestions([
+    ['মূল বইয়ের কার্যক্রম', [['A. রাতে বিদায়ের বাক্য দুটি শুনে বলো।'],['B. “It’s time to go home” গানটি শুনে গাও।'],['C. Group work: দলবদ্ধ হয়ে গানটি গাও।']]],
+    ['Let’s practise', [['1. Lesson 3-এর Activity C দেখে Roton, Salma ও Tanim-এর কথোপকথনের চারটি শূন্যস্থান পূরণ করো।'],['2. Lesson 4-এর Activity C দেখে Asif ও Rina-এর কথোপকথনের সাতটি শূন্যস্থান পূরণ করো।']]]
+  ]),a:pairedSolutions([
+    ['মূল বইয়ের কার্যক্রম', [['A. রাতের বিদায়','<b>Good night, see you tomorrow.</b><br><b>Good night, see you in the morning.</b>'],['B. গান','বইয়ের দেওয়া গানটি সুরে ও স্পষ্ট উচ্চারণে গাইবে। গানের মূল ভাব: বাড়ি যাওয়ার সময় সবাইকে goodbye বলা এবং আবার দেখা হওয়ার কথা বলা।'],['C. Group work','দল ভাগ করে B-এর গানটি গাইবে।']]],
+    ['Let’s practise', [['1. শূন্যস্থান পূরণ','Salma: <b>Good evening</b>, Roton.<br>Tanim: Nice to <b>meet</b> you.<br>Salma: <b>Nice</b> meeting you, too.'],['2. শূন্যস্থান পূরণ','Rina: I’m <b>fine</b>, <b>thanks</b>. And you?<br>Asif: I’m <b>good</b>. <b>Where</b> are you going?<br>Asif: <b>Okay</b>, goodbye. <b>See</b> you <b>later</b>.<br>Rina: <b>Goodbye</b>!']]]
+  ])},
+  {p:12,l:'Unit 1 · Lesson 6: Numbers 1–30',q:'A–C ও Let’s practise 1–4',type:'মূল বইয়ের সব কার্যক্রম',t:sourceQuestions([
+    ['মূল বইয়ের কার্যক্রম', [['A. September 2026-এর ক্যালেন্ডার দেখে 1–30 সংখ্যা পড়ো।'],['B. 1–30 পর্যন্ত সংখ্যাগুলো কথায় লেখো।'],['C. June 2026-এর ক্যালেন্ডারে সঠিক তারিখগুলো বসাও।']]],
+    ['Let’s practise', [['1. 1–9 সংখ্যাকে তার ইংরেজি শব্দের সঙ্গে মিল করো।'],['2. one থেকে ten-এর ধারায় বাদ পড়া সংখ্যাগুলো কথায় লেখো।'],['3. 9, 14, 17, 23, 26 ও 28-এর আগের সংখ্যা লেখো।'],['4. 12, 15, 18, 23, 27 ও 29-এর পরের সংখ্যা লেখো।']]]
+  ]),a:pairedSolutions([
+    ['মূল বইয়ের কার্যক্রম', [['A. পড়ার ক্রম','<b>one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, fourteen, fifteen, sixteen, seventeen, eighteen, nineteen, twenty, twenty-one, twenty-two, twenty-three, twenty-four, twenty-five, twenty-six, twenty-seven, twenty-eight, twenty-nine, thirty</b>'],['B. সংখ্যাগুলো কথায়','1 one; 2 two; 3 three; 4 four; 5 five; 6 six; 7 seven; 8 eight; 9 nine; 10 ten; 11 eleven; 12 twelve; 13 thirteen; 14 fourteen; 15 fifteen; 16 sixteen; 17 seventeen; 18 eighteen; 19 nineteen; 20 twenty; 21 twenty-one; 22 twenty-two; 23 twenty-three; 24 twenty-four; 25 twenty-five; 26 twenty-six; 27 twenty-seven; 28 twenty-eight; 29 twenty-nine; 30 thirty.'],['C. June 2026 ক্যালেন্ডার','June 2026-এ 1 তারিখ সোমবার। সারিগুলো হবে: <b>1–7, 8–14, 15–21, 22–28, 29–30</b>; বইয়ের ক্যালেন্ডারের ঘরে সেই ক্রমে তারিখ বসাবে।']]],
+    ['Let’s practise', [['1. মিল','1–one, 2–two, 3–three, 4–four, 5–five, 6–six, 7–seven, 8–eight, 9–nine.'],['2. বাদ পড়া শব্দ','<b>two, four, five, seven, eight, ten</b>'],['3. আগের সংখ্যা','9-এর আগে <b>8</b>; 14-এর আগে <b>13</b>; 17-এর আগে <b>16</b>; 23-এর আগে <b>22</b>; 26-এর আগে <b>25</b>; 28-এর আগে <b>27</b>।'],['4. পরের সংখ্যা','12-এর পরে <b>13</b>; 15-এর পরে <b>16</b>; 18-এর পরে <b>19</b>; 23-এর পরে <b>24</b>; 27-এর পরে <b>28</b>; 29-এর পরে <b>30</b>।']]]
+  ])},
+  {p:15,l:'Unit 1 · Lesson 7: Introducing myself',q:'A–C ও Let’s practise 1–2',type:'মূল বইয়ের সব কার্যক্রম',t:sourceQuestions([
+    ['মূল বইয়ের কার্যক্রম', [['A. Jerin-এর পরিচয়পাঠটি পড়ো।'],['B(1). What is the girl’s name?'],['B(2). How old is she?'],['B(3). Where does she live?'],['B(4). What class is she in?'],['C. Jerin-এর Name, Age, Class ও School’s name ছকটি পূরণ করো।']]],
+    ['Let’s practise', [['1. school, class, family, lives শব্দ দিয়ে চারটি শূন্যস্থান পূরণ করো।'],['2. নিজের Name, Age, Class ও School’s name দিয়ে ছকটি পূরণ করো।']]]
+  ]),a:pairedSolutions([
+    ['মূল বইয়ের কার্যক্রম', [['A. পাঠের তথ্য','Jerin is <b>8 years old</b>. She is in <b>class 3</b> at <b>Mohonpur Government Primary School</b>. She lives with her family in <b>Mohonpur</b>.'],['B(1). Name','The girl’s name is <b>Jerin</b>.'],['B(2). Age','She is <b>8 years old</b>.'],['B(3). Place','She lives in <b>Mohonpur</b>.'],['B(4). Class','She is in <b>class 3</b>.'],['C. পূরণ করা ছক','Name: <b>Jerin</b>; Age: <b>8</b>; Class: <b>3</b>; School’s name: <b>Mohonpur Government Primary School</b>.']]],
+    ['Let’s practise', [['1. শূন্যস্থান পূরণ','She is in <b>class</b> 3. Her <b>school</b> is Mohonpur Government Primary School. She <b>lives</b> in Mohonpur. She lives with her <b>family</b>.'],['2. নিজের তথ্যের ছক','এটি নিজের তথ্য। <b>নমুনা:</b> Name: Rafi; Age: 8; Class: 3; School’s name: Mohonpur Government Primary School. নিজের সত্য তথ্য লিখবে।']]]
+  ])},
+  {p:17,l:'Unit 1 · Lesson 8: Introducing someone',q:'A–B ও Let’s practise 1',type:'মূল বইয়ের সব কার্যক্রম',t:sourceQuestions([
+    ['মূল বইয়ের কার্যক্রম', [['A. Zabed, Sabiha ও Mahmud Hasan-এর কথোপকথনটি শুনে, বলো ও পড়ো।'],['B. একজন বন্ধুকে পরিচয় করিয়ে দাও।']]],
+    ['Let’s practise', [['1. Laila, Sagor ও Mamun-এর কথোপকথনের ছয়টি শূন্যস্থান পূরণ করো।']]]
+  ]),a:pairedSolutions([
+    ['মূল বইয়ের কার্যক্রম', [['A. কথোপকথন','Zabed: <b>Hello, Sabiha!</b><br>Sabiha: <b>Hi, Zabed! How are you?</b><br>Zabed: <b>Fine, thanks. Sabiha, meet my friend, Mahmud Hasan. And Mahmud, this is Sabiha.</b><br>Sabiha: <b>Hello, Mahmud! Nice to meet you.</b><br>Mahmud: <b>Nice meeting you, too.</b>'],['B. পরিচয়ের নমুনা','<b>This is my friend, Rafi. Rafi, this is my friend, Sima.</b>']]],
+    ['Let’s practise', [['1. শূন্যস্থান পূরণ','Sagor: Hi, Laila! <b>How are you</b>?<br>Laila: Fine, thanks. Sagor, <b>meet</b> my friend, Mamun.<br>Sagor: Hello, Mamun! <b>Nice</b> to <b>meet</b> you.<br>Laila: Nice <b>meeting</b> you, too.']]]
+  ])},
+  {p:19,l:'Unit 1 · Lesson 9: Numbers 11–20 in words',q:'A–C ও Let’s practise 1–3',type:'মূল বইয়ের সব কার্যক্রম',t:sourceQuestions([
+    ['মূল বইয়ের কার্যক্রম', [['A. 11–20 পর্যন্ত সংখ্যাগুলো পড়ো ও বলো।'],['B. 11–20 পর্যন্ত সংখ্যা কথায় লেখো।'],['C. Group game: figure ও word card নিয়ে 11 থেকে 20 ক্রমে দাঁড়াও এবং জোড়া মেলাও।']]],
+    ['Let’s practise', [['1. 11, 12, 15, 18 ও 20-কে সঠিক number word-এর সঙ্গে মিল করো।'],['2. 12, 13, 14, 15, 18 ও 20 কথায় লেখো।'],['3. eleven থেকে twenty ধারায় বাদ পড়া number word-গুলো লেখো।']]]
+  ]),a:pairedSolutions([
+    ['মূল বইয়ের কার্যক্রম', [['A ও B. Number words','11 <b>eleven</b>; 12 <b>twelve</b>; 13 <b>thirteen</b>; 14 <b>fourteen</b>; 15 <b>fifteen</b>; 16 <b>sixteen</b>; 17 <b>seventeen</b>; 18 <b>eighteen</b>; 19 <b>nineteen</b>; 20 <b>twenty</b>.'],['C. Group game','Group 1 figure card নিয়ে 11–20 ক্রমে দাঁড়াবে। Group 2 word card নিয়ে eleven–twenty ক্রমে দাঁড়াবে। পরে একই সংখ্যা ও শব্দের কার্ড মিলিয়ে জোড়া হবে।']]],
+    ['Let’s practise', [['1. মিল','11–eleven, 12–twelve, 15–fifteen, 18–eighteen, 20–twenty.'],['2. কথায় লেখা','12 <b>twelve</b>; 13 <b>thirteen</b>; 14 <b>fourteen</b>; 15 <b>fifteen</b>; 18 <b>eighteen</b>; 20 <b>twenty</b>.'],['3. বাদ পড়া শব্দ','<b>eleven, fourteen, sixteen, seventeen, nineteen, twenty</b>.']]]
+  ])}
+];
+
 const englishSolutions = [
-  englishLesson(1,1,1,"Hello",[["Complete the greeting: “Good morning. What’s your name?”"],["Answer: “How are you?”"],["Write one polite greeting."]],[["Complete the greeting: “Good morning. What’s your name?”","“Good morning. My name is Rafi.”"],["Answer: “How are you?”","“I’m good, thanks.”"],["Write one polite greeting.","“Hello, Sima!”"]]),
-  englishLesson(3,1,2,"Talking about myself",[["Complete: “___ is my name.”"],["Write a sentence about a favourite game."],["Write a sentence about a favourite colour."]],[["Complete: “___ is my name.”","“Rima is my name.”"],["Write a sentence about a favourite game.","“Football is my favourite game.”"],["Write a sentence about a favourite colour.","“Blue is my favourite colour.”"]]),
-  englishLesson(6,1,3,"Greetings",[["What do you say in the morning?"],["What do you say in the evening?"],["Reply politely to “How are you?”"]],[["What do you say in the morning?","“Good morning.”"],["What do you say in the evening?","“Good evening.”"],["Reply politely to “How are you?”","“I’m fine, thank you.”"]]),
-  englishLesson(8,1,4,"Goodbye 1",[["What do you say when you leave now?"],["Complete: “See you ___.”"],["Reply to “Goodbye, Rafi.”"]],[["What do you say when you leave now?","“Goodbye.”"],["Complete: “See you ___.”","“See you later.”"],["Reply to “Goodbye, Rafi.”","“Goodbye, Sima.”"]]),
-  englishLesson(10,1,5,"Goodbye 2",[["What can you say before leaving school?"],["Complete: “See you ___.”"],["Write a polite farewell."]],[["What can you say before leaving school?","“Goodbye, teacher.”"],["Complete: “See you ___.”","“See you tomorrow.”"],["Write a polite farewell.","“Bye. Take care.”"]]),
-  englishLesson(12,1,6,"Numbers 1–30",[["Write 14 in words."],["Write “twenty-seven” in figures."],["What number comes after 19?"]],[["Write 14 in words.","fourteen"],["Write “twenty-seven” in figures.","27"],["What number comes after 19?","20"]]),
-  englishLesson(15,1,7,"Introducing myself",[["Complete: “My name is ___.”"],["Complete: “I am ___ years old.”"],["Write one sentence about your school."]],[["Complete: “My name is ___.”","“My name is Jamil.”"],["Complete: “I am ___ years old.”","“I am eight years old.”"],["Write one sentence about your school.","“I study at a primary school.”"]]),
-  englishLesson(17,1,8,"Introducing someone",[["Introduce your friend Rupa."],["Ask someone’s name."],["Write: “He is my friend.” for a girl."]],[["Introduce your friend Rupa.","“This is my friend Rupa.”"],["Ask someone’s name.","“What is your name?”"],["Write: “He is my friend.” for a girl.","“She is my friend.”"]]),
-  englishLesson(19,1,9,"Numbers 11–20 in words",[["Write 16 in words."],["Write “nineteen” in figures."],["Arrange in order: 18, 16, 17."]],[["Write 16 in words.","sixteen"],["Write “nineteen” in figures.","19"],["Arrange in order: 18, 16, 17.","16, 17, 18"]]),
+  ...englishUnit1Solutions,
   englishLesson(21,2,1,"Talking with friends",[["Ask a friend about a favourite game."],["Answer: “What is your favourite subject?”"],["Complete: “I like to play ___.”"]],[["Ask a friend about a favourite game.","“What is your favourite game?”"],["Answer: “What is your favourite subject?”","“English is my favourite subject.”"],["Complete: “I like to play ___.”","“I like to play football.”"]]),
   englishLesson(23,2,2,"Numbers 31–50",[["Write 35 in words."],["Write “forty-two” in figures."],["What number comes before 50?"]],[["Write 35 in words.","thirty-five"],["Write “forty-two” in figures.","42"],["What number comes before 50?","49"]]),
   englishLesson(26,2,3,"My family",[["Complete: “This is my ___.”"],["Who is your father’s daughter?"],["Write one sentence about your family."]],[["Complete: “This is my ___.”","“This is my mother.”"],["Who is your father’s daughter?","She is my sister."],["Write one sentence about your family.","“I love my family.”"]]),
@@ -276,7 +330,6 @@ const englishSolutions = [
   englishLesson(109,8,1,"The Ant and the Grasshopper",[["Who worked and stored food?"],["Who did not prepare for winter?"],["What is the lesson of the story?"]],[["Who worked and stored food?","The ant worked and stored food."],["Who did not prepare for winter?","The grasshopper did not prepare for winter."],["What is the lesson of the story?","We should work hard and prepare for the future."]]),
   englishLesson(114,8,2,"Enjoying a hill festival",[["Where is the festival held?"],["What should we do at a festival?"],["Write one sentence about a festival."]],[["Where is the festival held?","It is held in a hill area."],["What should we do at a festival?","We should enjoy it politely and respect others."],["Write one sentence about a festival.","“People wear colourful clothes at the festival.”"]])
 ];
-
 const islamSolutions = [
   {p:29,l:'অধ্যায় ১ · সৃষ্টি ও স্রষ্টা',q:'১–৪',type:'অধ্যায়ের প্রশ্নভিত্তিক সমাধান',t:sourceQuestions([
     ['সৃষ্টিজগৎ ও মহান আল্লাহ', [['এই বিশ্বজগৎ কে সৃষ্টি করেছেন?'],['আল্লাহর সৃষ্টির কয়েকটি উদাহরণ লেখো।'],['প্রকৃতির নিয়মশৃঙ্খলা থেকে আমরা কী বুঝতে পারি?'],['আল্লাহর প্রতি কৃতজ্ঞতা প্রকাশের উপায় কী?']]],
