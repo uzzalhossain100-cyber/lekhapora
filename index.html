@@ -38,6 +38,7 @@
   </main>
   <footer><div class="wrap"><div><b>EducareBD</b> · পড়ো, ভাবো, নিজের ভাষায় লেখো</div><div>তৃতীয় শ্রেণি · পাঠ্যবই ও সহায়ক সমাধান</div></div></footer>
 <script>
+function bnNum(value){const digits={'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};return String(value).replace(/[0-9]/g,d=>digits[d])}
 const driveLink = 'https://drive.google.com/file/d/1DAElBr1yasE575mfzKMVYvndJUV_rIcm/view';
 const drivePreview = 'https://drive.google.com/file/d/1DAElBr1yasE575mfzKMVYvndJUV_rIcm/preview';
 const classThreeBooks = [
@@ -300,8 +301,6 @@ function answerHint(x){return /[–-]/.test(String(x.q))?'উপপ্রশ্�
 function renderSolutions(){const data=getSolutionData();const subject=activeSolutionBook==='bangladesh'?'বাংলাদেশ ও বিশ্বপরিচয়':activeSolutionBook==='science'?'প্রাথমিক বিজ্ঞান':'বাংলা প্রথম পত্র';const note=activeSolutionBook==='science'?'অধ্যায় ১–১১-এর পৃষ্ঠা ও প্রশ্ন নম্বর অনুসারে সহায়ক উত্তর।':activeSolutionBook==='bangladesh'?'অধ্যায় ১-এর পৃষ্ঠা ও প্রশ্ন নম্বর অনুসারে সহায়ক উত্তর।':'বইয়ের মুদ্রিত পৃষ্ঠা নম্বর অনুসারে অনুশীলনীর সহায়ক উত্তর।';const pages=getPages();const filtered=data.filter(x=>(activePage==='সব'||String(x.p)===String(activePage))&&(`${x.l} ${x.q} ${x.t} ${x.a}`).toLowerCase().includes(query.toLowerCase()));const box=document.getElementById('solutions');box.innerHTML=`<div class="solution-hero"><div><h2>${subject} — সমাধান</h2><p>${note}</p></div><div class="solution-badge"><strong>${bnNum(data.length)}</strong>টি সহায়ক উত্তর</div></div><div class="study-tip">💡 <b>পড়ার কৌশল:</b> আগে বইয়ের প্রশ্নটি নিজে পড়ো ও উত্তর ভাবো। তারপর এই উত্তর মিলিয়ে নিজের খাতায় লেখো। রচনামূলক উত্তরে নিজের অভিজ্ঞতাও যোগ করবে।</div><div class="filters"><div class="filter-chips"><button class="chip ${activePage==='সব'?'active':''}" onclick="setPage('সব')">সব পৃষ্ঠা</button>${pages.map(p=>`<button class="chip ${String(activePage)===String(p)?'active':''}" onclick="setPage(${p})">পৃ. ${bnNum(p)}</button>`).join('')}</div><input class="search" value="${escapeAttr(query)}" oninput="query=this.value;renderSolutions()" placeholder="প্রশ্ন বা শব্দ খুঁজুন…" aria-label="সমাধানে খোঁজ করুন"></div><div class="solutions-count">${bnNum(filtered.length)}টি ফল পাওয়া গেছে</div><div class="solution-list">${filtered.length?filtered.map((x,i)=>`<details id="${solutionId(x)}" class="answer-card" ${i===0?'open':''}><summary><span class="page-pill">পৃষ্ঠা ${bnNum(x.p)}</span><span class="q-title"><span>${x.l} · প্রশ্ন ${x.q}</span><small class="q-kind">${solutionKind(x)}</small></span><span class="toggle">+</span></summary><div class="answer-body"><div class="question-box"><div class="question-label">প্রশ্ন ${x.q}</div><p class="question">${x.t}</p></div><div class="answer-heading"><span>উত্তর</span><small>${answerHint(x)}</small></div><div class="answer">${x.a}</div></div></details>`).join(''):'<div class="empty">কোনো মিল পাওয়া যায়নি। অন্য শব্দ লিখে খুঁজে দেখো।</div>'}</div>`}
 function escapeAttr(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
 function setPage(p){activePage=p;renderSolutions()}
-renderClasses();
-
 // Full-page classroom flow: class → subject → main book or solution.
 const appSubjects = [
   {id:'bangla',title:'বাংলা প্রথম পত্র',icon:'📕',ready:true},
