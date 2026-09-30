@@ -46,7 +46,7 @@ const classThreeBooks = [
   {id:'bangladesh',title:'বাংলাদেশ ও বিশ্বপরিচয়',icon:'🌏',hasSolutions:true,solutionStatus:'অধ্যায় ১',link:'https://drive.google.com/file/d/17igGd7jR1cPSp0gEgNt-mbnjIcg3Plag/view',preview:'https://drive.google.com/file/d/17igGd7jR1cPSp0gEgNt-mbnjIcg3Plag/preview'},
   {id:'science',title:'প্রাথমিক বিজ্ঞান',icon:'🔬',hasSolutions:true,solutionStatus:'অধ্যায় ১–১১',link:'https://drive.google.com/file/d/13CfVmYCMfHQYKldvC5MK0OOTIWuOdm9Q/view',preview:'https://drive.google.com/file/d/13CfVmYCMfHQYKldvC5MK0OOTIWuOdm9Q/preview'},
   {id:'islam',title:'ইসলাম শিক্ষা',icon:'☪️',link:'https://drive.google.com/file/d/1isd83RnC8lGCBOjBG-7AUxfyCtgI3vl4/view',preview:'https://drive.google.com/file/d/1isd83RnC8lGCBOjBG-7AUxfyCtgI3vl4/preview'},
-  {id:'math',title:'প্রাথমিক গণিত',icon:'➗',link:'https://drive.google.com/file/d/16boJDg2XlkCER8pF5QkGlrj89ZlLbRQZ/view',preview:'https://drive.google.com/file/d/16boJDg2XlkCER8pF5QkGlrj89ZlLbRQZ/preview'},
+  {id:'math',title:'প্রাথমিক গণিত',icon:'➗',hasSolutions:true,solutionStatus:'অধ্যায় ১ · সংখ্যা',link:'https://drive.google.com/file/d/16boJDg2XlkCER8pF5QkGlrj89ZlLbRQZ/view',preview:'https://drive.google.com/file/d/16boJDg2XlkCER8pF5QkGlrj89ZlLbRQZ/preview'},
   {id:'english',title:'English For Today',icon:'🔤',link:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/view',preview:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/preview'}
 ];
 const classNames = ['প্রথম','দ্বিতীয়','তৃতীয়','চতুর্থ','পঞ্চম','ষষ্ঠ','সপ্তম','অষ্টম','নবম','দশম','একাদশ','দ্বাদশ'];
@@ -154,6 +154,30 @@ const bangladeshSolutions = [
 
 function sourceQuestions(groups){return `<ol class="source-question-list">${groups.map(g=>`<li><b>${g[0]}</b><ol>${g[1].map(x=>`<li>${x[0]}</li>`).join('')}</ol></li>`).join('')}</ol>`}
 function pairedSolutions(groups){return groups.map((g,gi)=>`<div class="qa-group"><h4>${g[0]}</h4>${g[1].map((x,i)=>`<div class="qa-item"><div class="qa-question">প্রশ্ন ${i+1}: ${x[0]}</div><div class="qa-answer"><b>উত্তর:</b> ${x[1]}</div></div>`).join('')}</div>`).join('')}
+const mathSolutions = [
+  {p:19,l:'অধ্যায় ১ · সংখ্যা',q:'৪–৫',type:'বহুনির্বাচনি ও স্থানীয় মান',t:sourceQuestions([
+    ['৪. সঠিক উত্তরের পাশে টিক (✓) চিহ্ন দিই', [['এক অযুত কত অঙ্ক বিশিষ্ট সংখ্যা হবে?'],['নিচের কোনটি বৃহত্তম সংখ্যা?'],['চিত্রে বাম দিক থেকে গুনলে কালো রঙের বৃত্তটির অবস্থান ক্রমবাচক সংখ্যায় কততম?'],['৫৯৭, ৫৭৯, ৫৭৭, ৫৭৫ সংখ্যাগুলোকে বড়ো থেকে ছোটো ক্রমে সাজালে কোন ক্রমটি সঠিক?'],['৫, ১০, ১৫, ২০, ২৫, ৩০—প্যাটার্নটির নিয়ম কী?'],['৭, ১১, ___, ১৯, ___, ২৭—প্যাটার্নটির খালি ঘরের সংখ্যাগুলো কত?']]],
+    ['৫. খালি ঘর পূরণ করি', [['সংখ্যাটি ৩ হাজার ৫ শতক ০ দশক ৫ একক। সংখ্যাটি কত?'],['সংখ্যাটি ৭ হাজার, ১ শতক, ৪ দশক ও ৫ একক। সংখ্যাটি কত?'],['সংখ্যাটি ২ হাজার, ২ দশক ও ৭ একক। সংখ্যাটি কত?'],['সংখ্যাটি ৫ হাজার ৬ একক। সংখ্যাটি কত?'],['৪৩৯৭ সংখ্যাটিতে কত হাজার, কত শতক, কত দশক ও কত একক আছে?'],['৫৮০০৯ সংখ্যাটিতে কত অযুত, কত হাজার, কত শতক, কত দশক ও কত একক আছে?']]]
+  ]),a:pairedSolutions([
+    ['৪. সঠিক উত্তরের পাশে টিক (✓) চিহ্ন দিই', [['এক অযুত কত অঙ্ক বিশিষ্ট সংখ্যা হবে?','পাঁচ অঙ্ক। কারণ ১ অযুত = ১০,০০০।'],['নিচের কোনটি বৃহত্তম সংখ্যা?','যে সংখ্যার বাম দিকের অঙ্ক বড়ো, সেটিই বৃহত্তম। দেওয়া সংখ্যাগুলোর অঙ্ক হাজার, শতক, দশক ও একক স্থান থেকে তুলনা করে সবচেয়ে বড়োটি বাছাই করতে হবে।'],['কালো রঙের বৃত্তটির অবস্থান কততম?','বাম দিক থেকে একটি একটি করে গুনে কালো বৃত্তটির অবস্থান লিখতে হবে।'],['সংখ্যাগুলোকে বড়ো থেকে ছোটো ক্রমে সাজাও।','প্রথমে শতকের অঙ্ক, তারপর দশকের অঙ্ক এবং শেষে এককের অঙ্ক তুলনা করে অবরোহ ক্রমে সাজাতে হবে।'],['৫, ১০, ১৫, ২০, ২৫, ৩০—প্যাটার্নটির নিয়ম কী?','প্রতি ক্ষেত্রে ৫ করে বৃদ্ধি পেয়েছে।'],['৭, ১১, ___, ১৯, ___, ২৭—খালি ঘরের সংখ্যা কত?','প্রতি ক্ষেত্রে ৪ করে বৃদ্ধি হয়েছে। তাই খালি ঘরে ১৫ ও ২৩ হবে।']]],
+    ['৫. খালি ঘর পূরণ করি', [['৩ হাজার ৫ শতক ০ দশক ৫ একক—সংখ্যাটি কত?','৩৫০৫।'],['৭ হাজার, ১ শতক, ৪ দশক ও ৫ একক—সংখ্যাটি কত?','৭১৪৫।'],['২ হাজার, ২ দশক ও ৭ একক—সংখ্যাটি কত?','২০২৭।'],['৫ হাজার ৬ একক—সংখ্যাটি কত?','৫০০৬।'],['৪৩৯৭-এ কত হাজার, শতক, দশক ও একক আছে?','৪ হাজার, ৩ শতক, ৯ দশক ও ৭ একক।'],['৫৮০০৯-এ কত অযুত, হাজার, শতক, দশক ও একক আছে?','৫ অযুত, ৮ হাজার, ০ শতক, ০ দশক ও ৯ একক।']]]
+  ])},
+  {p:20,l:'অধ্যায় ১ · সংখ্যা',q:'৬–৭',type:'শতক ও সংখ্যারেখা',t:sourceQuestions([
+    ['৬. নিচের প্রশ্নগুলোর উত্তর দিই', [['৩৯ শত সংখ্যাটি কত?'],['১২২ শত সংখ্যাটি কত?'],['২৯০০-এ কয়টি শত আছে?'],['৯৯০০০-এ কয়টি শত আছে?']]],
+    ['৭. খালি ঘরে সংখ্যা লিখি', [['০, ১০০, ___, ৩০০, ___, ___, ৬০০ সংখ্যারেখার খালি ঘরগুলো পূরণ করো।'],['২৩০০, ___, ২৫০০, ২৬০০, ২৭০০, ___, ___ সংখ্যারেখার খালি ঘরগুলো পূরণ করো।']]]
+  ]),a:pairedSolutions([
+    ['৬. নিচের প্রশ্নগুলোর উত্তর দিই', [['৩৯ শত সংখ্যাটি কত?','৩৯ × ১০০ = ৩৯০০।'],['১২২ শত সংখ্যাটি কত?','১২২ × ১০০ = ১২২০০।'],['২৯০০-এ কয়টি শত আছে?','২৯০০ ÷ ১০০ = ২৯। অর্থাৎ ২৯টি শত আছে।'],['৯৯০০০-এ কয়টি শত আছে?','৯৯০০০ ÷ ১০০ = ৯৯০। অর্থাৎ ৯৯০টি শত আছে।']]],
+    ['৭. খালি ঘরে সংখ্যা লিখি', [['প্রথম সংখ্যারেখার খালি ঘরগুলো পূরণ করো।','০, ১০০, ২০০, ৩০০, ৪০০, ৫০০, ৬০০।'],['দ্বিতীয় সংখ্যারেখার খালি ঘরগুলো পূরণ করো।','২৩০০, ২৪০০, ২৫০০, ২৬০০, ২৭০০, ২৮০০, ২৯০০।']]]
+  ])},
+  {p:20,l:'অধ্যায় ১ · সংখ্যা',q:'৮–৯',type:'পূর্ববর্তী–পরবর্তী ও তুলনা',t:sourceQuestions([
+    ['৮. প্রতি ক্ষেত্রের সংখ্যাটি কত?', [['১২৯৯৯ থেকে ১ বেশি একটি সংখ্যা কত?'],['৩০০০০ থেকে ১ কম একটি সংখ্যা কত?'],['১০০০০ থেকে ১০ কম একটি সংখ্যা কত?'],['৪৯৯৯০ থেকে ১০ বেশি একটি সংখ্যা কত?'],['৭৯৯০০ থেকে ১০০ বেশি একটি সংখ্যা কত?']]],
+    ['৯. খালি ঘরে > বা < প্রতীক বসিয়ে বড়ো বা ছোটো তুলনা করি', [['৭৯৫ ___ ৭৫৭'],['১৭৭৯৯ ___ ১৭৮৯৯'],['৮৫৭৯ ___ ৮৫৭৮'],['৩৭৫৮৯ ___ ৩৮৫৭৯'],['৮৫৭৯ ___ ৮৫৭৮'],['১৭৯৯৯ ___ ১৮৯৯৯']]]
+  ]),a:pairedSolutions([
+    ['৮. প্রতি ক্ষেত্রের সংখ্যাটি কত?', [['১২৯৯৯ থেকে ১ বেশি একটি সংখ্যা কত?','১২৯৯৯ + ১ = ১৩০০০।'],['৩০০০০ থেকে ১ কম একটি সংখ্যা কত?','৩০০০০ − ১ = ২৯৯৯৯।'],['১০০০০ থেকে ১০ কম একটি সংখ্যা কত?','১০০০০ − ১০ = ৯৯৯০।'],['৪৯৯৯০ থেকে ১০ বেশি একটি সংখ্যা কত?','৪৯৯৯০ + ১০ = ৫০০০০।'],['৭৯৯০০ থেকে ১০০ বেশি একটি সংখ্যা কত?','৭৯৯০০ + ১০০ = ৮০০০০।']]],
+    ['৯. বড়ো বা ছোটো তুলনা করি', [['৭৯৫ ___ ৭৫৭','৭৯৫ > ৭৫৭।'],['১৭৭৯৯ ___ ১৭৮৯৯','১৭৭৯৯ < ১৭৮৯৯।'],['৮৫৭৯ ___ ৮৫৭৮','৮৫৭৯ > ৮৫৭৮।'],['৩৭৫৮৯ ___ ৩৮৫৭৯','৩৭৫৮৯ < ৩৮৫৭৯।'],['৮৫৭৯ ___ ৮৫৭৮','৮৫৭৯ > ৮৫৭৮।'],['১৭৯৯৯ ___ ১৮৯৯৯','১৭৯৯৯ < ১৮৯৯৯।']]]
+  ])}
+];
+
 const scienceSolutions = [
   {p:10,l:'অধ্যায় ১ · উদ্ভিদ পরিচিতি',q:'১–৩',type:'অধ্যায়ের পূর্ণ অনুশীলনী',t:sourceQuestions([
     ['১. সঠিক উত্তরে টিক (✓) চিহ্ন দিই', [['নিচের কোন উদ্ভিদের ফুল হয় না? (ক) গম  (খ) ধান  (গ) ফার্ন  (ঘ) শাপলা'],['উদ্ভিদের কোন অংশ খাদ্য প্রস্তুত করে? (ক) পাতা  (খ) ফুল  (গ) মূল  (ঘ) কাণ্ড'],['নিচের কোন উদ্ভিদের মূল মাটির অনেক গভীরে যায়? (ক) জাম  (খ) গোলাপ  (গ) ধান  (ঘ) শাপলা']]],
@@ -291,7 +315,7 @@ function openSupplementReader(id){const book=classThreeBooks.find(x=>x.id===id);
 function openBanglaBook(){if(selectedClass!==3){selectedClass=3;renderClasses();selectClass(3)} const r=document.getElementById('bookRoute');r.innerHTML=`<div class="route-top"><div class="crumb">তৃতীয় শ্রেণি <span>›</span> <b>বাংলা প্রথম পত্র</b></div><button class="backlink" onclick="document.getElementById('bookRoute').classList.remove('show');document.getElementById('bookReader').classList.remove('show');document.getElementById('solutions').classList.remove('show')">× বন্ধ করো</button></div><div class="book-choices"><article class="choice-card"><div class="choice-icon">📕</div><h3>মূল বই</h3><p>পুরো বইটি EducareBD-এর ভেতরেই পড়ুন। পাশের অনুশীলনীতে ক্লিক করলে সরাসরি সমাধানে চলে যাবে।</p><button onclick="openReader()">মূল বই পড়ুন →</button></article><article class="choice-card solution"><div class="choice-icon">💡</div><h3>সমাধান</h3><p>অনুশীলনীর পৃষ্ঠা, প্রশ্ন এবং সহায়ক উত্তর একসঙ্গে দেখুন।</p><button onclick="showSolutions()">সমাধান দেখুন →</button></article></div>`;r.classList.add('show');setTimeout(()=>r.scrollIntoView({behavior:'smooth',block:'nearest'}),40)}
 function openReader(){const reader=document.getElementById('bookReader');const jumps=solutions.map(x=>`<button class="jump-question" onclick="goToSolution(${x.p},'${x.q}','bangla')"><span class="jump-page">পৃষ্ঠা ${bnNum(x.p)} · প্রশ্ন ${x.q}</span>${x.l}</button>`).join('');reader.innerHTML=`<div class="reader-shell"><div class="reader-head"><div><h2>বাংলা প্রথম পত্র — মূল বই</h2><p>বইয়ের পাশে থাকা অনুশীলনীতে ক্লিক করলে সেই প্রশ্নের সমাধান খুলবে।</p></div><a class="reader-newtab" href="${driveLink}" target="_blank" rel="noopener">↗ বড় পর্দায় পড়ুন</a></div><div class="reader-grid"><div class="iframe-shell"><iframe src="${drivePreview}" title="তৃতীয় শ্রেণির বাংলা প্রথম পত্রের পূর্ণ বই" allow="autoplay" loading="lazy">এই ব্রাউজারে বই দেখানো সম্ভব হচ্ছে না।</iframe></div><aside class="exercise-nav"><h3>অনুশীলনী সূচি</h3><p>প্রশ্নে ক্লিক করুন, সরাসরি সমাধানে যান</p><div class="jump-list">${jumps}</div></aside></div></div>`;reader.classList.add('show');setTimeout(()=>reader.scrollIntoView({behavior:'smooth',block:'start'}),40)}
 function showSolutions(book='bangla'){activeSolutionBook=book;activePage='সব';query='';document.getElementById('solutions').classList.add('show');renderSolutions();setTimeout(()=>document.getElementById('solutions').scrollIntoView({behavior:'smooth',block:'start'}),40)}
-function getSolutionData(){return activeSolutionBook==='bangladesh'?bangladeshSolutions:activeSolutionBook==='science'?scienceSolutions:solutions}
+function getSolutionData(){return activeSolutionBook==='bangladesh'?bangladeshSolutions:activeSolutionBook==='science'?scienceSolutions:activeSolutionBook==='math'?mathSolutions:solutions}
 function solutionId(x,book=activeSolutionBook){return `solution-${book}-p-${x.p}-q-${encodeURIComponent(x.q)}`}
 function goToSolution(p,q,book='bangla'){activeSolutionBook=book;activePage=Number(p);query='';const box=document.getElementById('solutions');box.classList.add('show');renderSolutions();setTimeout(()=>{const card=document.getElementById(solutionId({p:Number(p),q:q},book));if(card){card.open=true;card.scrollIntoView({behavior:'smooth',block:'start'})}},60)}
 function getPages(){return [...new Set(getSolutionData().map(x=>x.p))]}
@@ -306,13 +330,13 @@ const appSubjects = [
   {id:'bangladesh',title:'বাংলাদেশ ও বিশ্বপরিচয়',icon:'🌏',ready:true},
   {id:'science',title:'প্রাথমিক বিজ্ঞান',icon:'🔬',ready:true},
   {id:'islam',title:'ইসলাম শিক্ষা',icon:'☪️',ready:false},
-  {id:'math',title:'প্রাথমিক গণিত',icon:'➗',ready:false},
+  {id:'math',title:'প্রাথমিক গণিত',icon:'➗',ready:true},
   {id:'english',title:'English For Today',icon:'🔤',ready:false}
 ];
 let appState={screen:'home',classNo:null,bookId:null};
 let appStack=[];
 function appBook(id){return classThreeBooks.find(x=>x.id===id)}
-function appSet(id){return id==='bangladesh'?bangladeshSolutions:id==='science'?scienceSolutions:solutions}
+function appSet(id){return id==='bangladesh'?bangladeshSolutions:id==='science'?scienceSolutions:id==='math'?mathSolutions:solutions}
 function appBookTitle(id){const b=appBook(id);return b?b.title:'বিষয়'}
 function appQuestionType(x){const t=`${x.l} ${x.t}`;if(x.type)return x.type;if(/বর্ণনামূলক/.test(t))return 'বর্ণনামূলক প্রশ্ন';if(/সংক্ষিপ্ত/.test(t))return 'সংক্ষিপ্ত উত্তর প্রশ্ন';if(/শূন্যস্থান/.test(t))return 'শূন্যস্থান পূরণ';if(/সঠিক উত্তর|টিক চিহ্ন|বহুনির্বাচনি/.test(t))return 'বহুনির্বাচনি প্রশ্ন';if(/মিল/.test(t))return 'মিল করো';if(/চলো, পারি/.test(t))return 'প্রয়োগভিত্তিক প্রশ্ন';return 'অনুশীলনী'}
 function pairedAnswerMarkup(x){if(/class=\"qa-group/.test(x.a))return x.a;return `<div class="qa-group"><h4>প্রশ্ন ${x.q} ও উত্তর</h4><div class="qa-item"><div class="qa-question">প্রশ্ন ${x.q}: ${x.t}</div><div class="qa-answer"><b>উত্তর:</b> ${x.a}</div></div></div>`}
