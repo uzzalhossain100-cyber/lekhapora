@@ -47,7 +47,7 @@ const classThreeBooks = [
   {id:'science',title:'প্রাথমিক বিজ্ঞান',icon:'🔬',hasSolutions:true,solutionStatus:'অধ্যায় ১–১১',link:'https://drive.google.com/file/d/13CfVmYCMfHQYKldvC5MK0OOTIWuOdm9Q/view',preview:'https://drive.google.com/file/d/13CfVmYCMfHQYKldvC5MK0OOTIWuOdm9Q/preview'},
   {id:'islam',title:'ইসলাম শিক্ষা',icon:'☪️',hasSolutions:true,solutionStatus:'অধ্যায় ১–৫',link:'https://drive.google.com/file/d/1isd83RnC8lGCBOjBG-7AUxfyCtgI3vl4/view',preview:'https://drive.google.com/file/d/1isd83RnC8lGCBOjBG-7AUxfyCtgI3vl4/preview'},
   {id:'math',title:'প্রাথমিক গণিত',icon:'➗',hasSolutions:true,solutionStatus:'অধ্যায় ১–১৩',link:'https://drive.google.com/file/d/16boJDg2XlkCER8pF5QkGlrj89ZlLbRQZ/view',preview:'https://drive.google.com/file/d/16boJDg2XlkCER8pF5QkGlrj89ZlLbRQZ/preview'},
-  {id:'english',title:'English For Today',icon:'🔤',hasSolutions:true,solutionStatus:'Unit 1 বিস্তারিত যাচাই · Unit 2–8 পুনর্গঠন চলছে',link:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/view',preview:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/preview'}
+  {id:'english',title:'English For Today',icon:'🔤',hasSolutions:true,solutionStatus:'Unit 1–8 · মূল বইয়ের কার্যক্রমভিত্তিক সংস্করণ',link:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/view',preview:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/preview'}
 ];
 const classNames = ['প্রথম','দ্বিতীয়','তৃতীয়','চতুর্থ','পঞ্চম','ষষ্ঠ','সপ্তম','অষ্টম','নবম','দশম','একাদশ','দ্বাদশ'];
 const commonBooks = ['বাংলা প্রথম পত্র','বাংলা দ্বিতীয় পত্র','English For Today','গণিত','বিজ্ঞান ও বাংলাদেশ'];
@@ -295,40 +295,173 @@ const englishUnit1Solutions = [
   ])}
 ];
 
+function englishActivityCard(p,unit,lesson,title,items){return {p:p,l:`Unit ${unit} · Lesson ${lesson}: ${title}`,q:'মূল বইয়ের কার্যক্রম ও অনুশীলনী',type:'মূল বইয়ের সব কার্যক্রম',t:sourceQuestions([['প্রশ্ন ও কার্যক্রম',items.map(x=>[x[0]])]]),a:pairedSolutions([['উত্তর ও করণীয়',items]])}}
+const englishCompleteRest = [
+englishActivityCard(21,2,1,'Talking with friends',[
+ ['A. Rishat ও Sujana-এর কথোপকথনটি পড়ো ও বলো।','Rishat: <b>Hello, Sujana! How are you?</b> Sujana: <b>Fine, thanks. And you?</b> Rishat: <b>I’m fine too. Would you like to play with me?</b> Sujana: <b>Yes, I’d like that, thank you.</b>'],
+ ['B. Faria ও নতুন ছাত্রী Farzana-এর কথোপকথনটি শুনে বলো।','Farzana is a new student. She is from <b>Rajshahi</b>. Faria is from <b>Sylhet</b>. Faria’s family lives near the school.'],
+ ['C. Activity A ও B-এর কথোপকথন বন্ধুর সঙ্গে অভিনয় করো।','দুইজন পালা করে Rishat–Sujana এবং Faria–Farzana-এর ভূমিকা বলবে।']]),
+englishActivityCard(23,2,2,'Numbers 31–50',[
+ ['A–C. 31–50 গুনে বলো, পড়ো এবং দুইটি digit card দিয়ে 31–50 সংখ্যা বানাও।','31 <b>thirty-one</b> থেকে 50 <b>fifty</b> পর্যন্ত ক্রমানুসারে বলবে; যেমন 31 thirty-one, 32 thirty-two, …, 40 forty, …, 50 fifty।'],
+ ['D. 31–50 সংখ্যাগুলো লেখো।','31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50।'],
+ ['E. 31, 32, __, __, 35, __, __, __, 39, 40, 41, __, __, 44, __, 46, __, 48, __, 50 পূরণ করো।','<b>33, 34, 36, 37, 38, 42, 43, 45, 47, 49</b>।'],
+ ['Let’s practise 1. Farzana is a new __; she is from __; Faria is from __; Faria’s family lives near __.','<b>student; Rajshahi; Sylhet; the school</b>।'],
+ ['Let’s practise 2. 31, 33, 35, 37, 39, 41, 43, 45, 47, 49-এর পরের সংখ্যা লেখো।','<b>32, 34, 36, 38, 40, 42, 44, 46, 48, 50</b>।'],
+ ['Let’s practise 3. 33, 44, 36, 48 ও 39-এর আগের ও পরের সংখ্যা লেখো।','33: <b>32, 34</b>; 44: <b>43, 45</b>; 36: <b>35, 37</b>; 48: <b>47, 49</b>; 39: <b>38, 40</b>।']]),
+englishActivityCard(26,2,3,'My family',[
+ ['B. পাঁচটি True/False: Samia নাম, class three, student, four members, brother 3 years old।','1 <b>False</b> (Her name is Sabiha); 2 <b>True</b>; 3 <b>True</b>; 4 <b>True</b>; 5 <b>False</b> (He is one year old)।'],
+ ['C(1–5). What is the girl’s name? How many members? What does mother/father do? How old is brother?','Her name is <b>Sabiha</b>. There are <b>four</b> members. Her mother is <b>a banker</b>. Her father is <b>a teacher</b>. Her brother is <b>one year old</b>.'],
+ ['D. নিজের পরিবার নিয়ে তিনটি বাক্য লেখো।','<b>নমুনা:</b> There are four members in my family. My father is a teacher. My mother is a banker. নিজের সত্য তথ্য লিখবে।'],
+ ['Let’s practise 1. Sabiha, her father, her mother ও her brother-এর সঙ্গে সঠিক বাক্যাংশ মেলাও।','Sabiha—<b>is a student</b>; her father—<b>is a teacher</b>; her mother—<b>works in a bank</b>; her brother—<b>is one year old</b>.'],
+ ['Let’s practise 2(a–e). সঠিক বিকল্পে tick দাও।','a <b>teacher</b>; b <b>three</b>; c <b>brother</b>; d <b>banker</b>; e <b>four</b>।']]),
+englishActivityCard(28,2,4,"Rhyme: It’s a Happy House",[
+ ['A. “It’s a Happy House” rhyme-টি শোনো ও পড়ো।','ছড়ায় house-এর অংশ হিসেবে <b>window, door, roof, floor</b> আছে।'],
+ ['B. খাতায় একটি house এঁকে rhyme বলার সময় প্রতিটি অংশে ইশারা করো।','House আঁকবে; window, door, roof ও floor-এ ইশারা করবে।'],
+ ['C. rhyme থেকে house-এর অংশগুলোর তালিকা করো এবং আরও অংশ যোগ করো।','বইয়ের তালিকা: <b>window, door, roof, floor</b>। আরও যোগ করা যায়: <b>wall, room, stairs, balcony</b>।']]),
+englishActivityCard(29,2,5,'My friend',[
+ ['B(1–4). Sunil-এর বয়স, best friend, Rahat কোথায় থাকে এবং বিকেলে তারা কী করে?','Sunil is <b>eight years old</b>. His best friend is <b>Rahat</b>. Rahat lives <b>near Sunil’s house</b>. They play <b>football</b> in the afternoon.'],
+ ['C(1–5). নিজের বন্ধুর নাম, বয়স, একই school, একসঙ্গে খেলা ও খেলার নাম লিখো।','<b>নমুনা:</b> My friend’s name is Rafi. He is eight years old. Yes, we go to the same school. Yes, we play together. We play football. নিজের তথ্য বসাবে।'],
+ ['D. বন্ধুকে নিয়ে চারটি বাক্য লেখো।','<b>নমুনা:</b> Rafi is my best friend. He is eight years old. He lives near my house. We play football together.'],
+ ['Let’s practise 1(a–d). Sunil-এর বয়স, Rahat-এর দক্ষতা, খেলা ও বিকেলের কাজের সঠিক বিকল্প বেছে নাও।','a <b>eight years</b>; b <b>English</b>; c <b>football</b>; d <b>play</b>।'],
+ ['Let’s practise 2(a–c). Sunil has many __; Rahat lives __ Sunil’s house; they play __.','<b>friends; near; football</b>।']]),
+englishActivityCard(31,2,6,'Numbers 51–70',[
+ ['A–C. 51–70 গুনে ও পড়ে বলো; pair card দিয়ে সংখ্যা বানাও।','51 <b>fifty-one</b> থেকে 70 <b>seventy</b> পর্যন্ত ক্রমানুসারে বলবে।'],
+ ['D. 50, 58, 54, 68, 62, 66, 64, 60, 52-এর পরের সংখ্যা লেখো।','<b>51, 59, 55, 69, 63, 67, 65, 61, 53</b>।'],
+ ['E–F. 51–70 থেকে even সংখ্যা আলাদা ও turtle-এ রং করো।','Even numbers: <b>52, 54, 56, 58, 60, 62, 64, 66, 68, 70</b>। Odd numbers: <b>51, 53, 55, 57, 59, 61, 63, 65, 67, 69</b>।'],
+ ['Let’s practise 1. 53, 55, 57, 59, 61, 63, 65, 67, 69-এর আগের সংখ্যা লেখো।','<b>52, 54, 56, 58, 60, 62, 64, 66, 68</b>।'],
+ ['Let’s practise 2. 51–70-এর odd ও even সংখ্যা আলাদা করো।','Odd: <b>51,53,55,57,59,61,63,65,67,69</b>; Even: <b>52,54,56,58,60,62,64,66,68,70</b>।']]),
+englishActivityCard(34,3,1,'Simple commands',[
+ ['A–B. “Do this, Do that” game খেলো এবং drill class-এ শোনা command-এর তালিকা করো।','নমুনা command: <b>Stand up. Sit down. Raise your hand. Turn left. Turn right.</b>'],
+ ['C(1). attention position-এর সব command শুনে repeat করো।','<b>Keep your head upright; Look to the front; Keep your body straight; Keep your arms down; Keep your palms facing in; Keep your hands and fingers straight; Keep your knees straight; Keep your heels together; Keep your mouth closed.</b>'],
+ ['C(2). Breathing exercise command বলো।','<b>Place your hands on lower chest. Breathe in. Breathe out.</b>'],
+ ['D. Exercise 1 ও Exercise 2-এর command দিয়ে ও অনুসরণ করে কাজ করো।','Exercise 1: <b>head still; palms outward; arms forward, sideways, downward; body straight; heels together.</b> Exercise 2: <b>head still; palms outward; arms upward, sideways, downward; feet apart.</b>'],
+ ['E. Exercise 3-এর ছয়টি শূন্যস্থান পূরণ করো।','<b>Keep</b> your head upright. <b>Look</b> at the front. <b>Keep</b> your back straight. <b>Place</b> your hands on waist. <b>Keep</b> your left leg forward. <b>Keep</b> your right knee still.']]),
+englishActivityCard(38,3,2,'Following and giving instructions',[
+ ['A. শিক্ষকের দেখানো simple kite তৈরির ধাপ লিখে রাখো।','মূল ধাপগুলো Activity B-এর 1–8 নম্বরে আছে।'],
+ ['B. simple kite তৈরির 1–8 ধাপ পড়ো ও ছোট দলে অনুসরণ করো।','(1) Fold A4 paper. (2) Put top corner on opposite side. (3) Do same on other side. (4) Staple. (5) Make tail. (6) Punch a hole 1–2 cm from staple. (7) Thread and tie string. (8) Hold string and wave to fly.'],
+ ['C. বাসায় নিজের kite বানিয়ে সাজিয়ে class-এ আনো।','রঙিন কাগজ, sticker বা paint ব্যবহার করা যায়; নির্ধারিত দিনে kite আনবে।']]),
+englishActivityCard(40,3,3,'Rhyme: Hello Hello',[
+ ['A. “Hello Hello” rhyme শুনে repeat করো।','ছড়ার কাজগুলো হলো <b>clap your hands, stretch up high, touch your toes, turn around, say hello, stamp your feet</b>।'],
+ ['B. rhyme-এর প্রতিটি instruction শুনে জোড়ায় প্রশ্ন-উত্তর করো।','নমুনা: A: <b>Can you clap your hands?</b> B: <b>Yes, I can.</b> একইভাবে: Can you stamp your feet? — Yes, I can.'],
+ ['Grammar focus: Can you + verb + please? ব্যবহার করে দুটি request লেখো।','<b>Can you open the door, please?</b><br><b>Can you move your seat, please?</b>']]),
+englishActivityCard(42,3,4,'Following and giving instructions',[
+ ['A–C. simple thermometer ব্যবহারের ধাপ দেখে, পড়ে ও সঙ্গীকে বলো।','(1) Shake well. (2) Put tip under armpit. (3) Touch skin. (4) Press arm. (5) Wait 2–3 minutes. (6) Remove. (7) Hold at eye level. (8) Follow mercury line. (9) Record temperature and wash thermometer.'],
+ ['D. library card-এর instructionগুলো শুনে repeat করো।','Dos: <b>Use books with maximum care; return book timely; keep book face up; pay fees regularly.</b> Don’ts: <b>Don’t fold pages; don’t write inside; don’t lose or damage a book.</b>'],
+ ['E. Instructionগুলো Dos ও Don’ts ছকে লেখো।','Dos ও Don’ts উপরের তালিকা অনুযায়ী দুই কলামে লিখবে।']]),
+englishActivityCard(44,3,5,'Making requests and responding properly',[
+ ['A–B. ছবি অনুযায়ী request-এর সঙ্গে কথোপকথন মেলাও এবং pair-এ বলো।','Orange juice: <b>Can I have an orange juice, please? — Of course. I will make you one.</b><br>Pencil: <b>Can I borrow your pencil, please? — Sure.</b><br>Book: <b>Can I borrow this book, please? — Sorry, this book is not for borrowing.</b><br>Direction: <b>Can you tell me the way to the Zainul Park? — It’s on Kachari road, next to the big playground.</b>'],
+ ['C(2–5). request-এর উপযুক্ত response লেখো।','2 <b>Sure. I am saying it again.</b> 3 <b>Sorry, but I am reading it now.</b> 4 <b>Sorry. I have only one pen.</b> 5 <b>Yes, please. I will see you at the library.</b>'],
+ ['D. mime/gesture দিয়ে request guessing game খেলো।','নমুনা: কলম চাইতে gesture করবে; সঙ্গী request বুঝে pen দেবে বা উপযুক্তভাবে উত্তর দেবে।']]),
+englishActivityCard(46,3,6,'Numbers 71–90',[
+ ['A–C. 71–90 গুনে, পড়ে ও pair card দিয়ে সংখ্যা বানাও।','71 <b>seventy-one</b> থেকে 90 <b>ninety</b> পর্যন্ত বলবে।'],
+ ['D. missing numbers পূরণ করো এবং F-এ সংখ্যা সাজাও।','72, 77, 80, 83, 86, 89-কে ক্রমানুসারে সাজালে: <b>72, 77, 80, 83, 86, 89</b>। 71–90 ধারার সব missing ঘর তার আগের/পরের ক্রম দেখে পূরণ করবে।'],
+ ['E. basket থেকে number card তুলে সংখ্যাটি বলো।','Card-এর figure দেখে সঠিক number word বলবে; যেমন 83 = <b>eighty-three</b>।']]),
+englishActivityCard(48,4,1,'Say the middle sounds /æ/ and /e/',[
+ ['A–C. bag, mat, hat, cat এবং বাক্যগুলোতে /æ/ sound বলো।','/æ/ words: <b>bag, mat, hat, cat</b>। বাক্য: <b>a cat on a mat; a hat on a cat; a bag on a mat</b>।'],
+ ['D–F. pen, hen, red, net এবং rhyme-এ /e/ sound বলো।','/e/ words: <b>pen, hen, red, net</b>। “A den and a hen…”-এ এই sound শুনে বলবে।'],
+ ['G. pen/pan, man/men, bag/mat, pen/ten, bed/cat-এর middle sound same (S) না different (D) লেখো।','<b>D, D, S, S, D</b>।'],
+ ['Let’s practise 1–3. /æ/ ও /e/ sound-এর শব্দ বলো এবং circle/underline করো।','/æ/: <b>can, man, happy, bad; cat, man, pan, hat, cap</b>। /e/: <b>den, bed, pet, leg; pen, bed, ten, red, hen</b>।']]),
+englishActivityCard(52,4,2,'Say the middle sounds /ɪ/ and /iː/',[
+ ['A–C. tin, pin, hill, pill-এ /ɪ/ sound; D–E-তে bean, sleep, sheep, feed-এ /iː/ sound বলো।','/ɪ/: <b>tin, pin, hill, pill</b>। /iː/: <b>bean, sleep, sheep, feed</b>।'],
+ ['F–G. slip/sleep, still/steel, bean/bin, ship/sheep, hit/heat, bin/fin pair-এর sound same/different লেখো।','ক্রমে: <b>D, D, D, D, D, S</b>।'],
+ ['Let’s practise. /ɪ/ শব্দ circle ও /iː/ শব্দ underline করো।','Circle /ɪ/: <b>nil, fill, tin, ship, slip</b>। Underline /iː/: <b>feed, sheep, bean</b>।']]),
+englishActivityCard(54,4,3,'Rhyme: Row, Row, Row Your Boat',[
+ ['A. Polar bear, Lion ও Crocodile-এর ছবি-নাম মেলাও।','ছবির প্রাণীর নাম: <b>polar bear, lion, crocodile</b>।'],
+ ['B–C. প্রাণীর নাম শুনলে তিনবার clap দাও এবং rhyme-টি জোরে পড়ো।','Rhyme-এ crocodile, polar bear ও lion এলে তিনবার clap করবে।'],
+ ['D. নিজের ভাষার একই ধরনের rhyme থাকলে class-এ share করো।','নিজের জানা নৌকা/নদী বিষয়ক ছড়া বলতে পারো; এটি ব্যক্তিগত উত্তর।']]),
+englishActivityCard(56,4,4,'Say the middle sounds /ɑː/ and /ʌ/',[
+ ['A–E. cart, heart, bard, card-এ /ɑː/ এবং cut, hut, bud, hush-এ /ʌ/ বলো।','/ɑː/: <b>cart, heart, bard, card</b>; /ʌ/: <b>cut, hut, bud, hush</b>।'],
+ ['F. heart/hut, bud/bun, cut/cart, mug/jug, bard/bud, barn/bun—same/different লেখো।','<b>D, S, D, S, D, D</b>।'],
+ ['G. শোনা শব্দ লিখে বলো।','<b>hut, cart, jug, bard, tub, heart, nut</b>।'],
+ ['Let’s practise. /ɑː/ ও /ʌ/ sound-এর শব্দে clap দাও।','/ɑː/: <b>start, part, far, mart, cart</b>; /ʌ/: <b>nut, cut, shut</b>।']]),
+englishActivityCard(59,4,5,'Numbers 91–100',[
+ ['A–C. 91–100 গুনে, পড়ে ও card দিয়ে সংখ্যা বানাও।','91 <b>ninety-one</b>, 92 ninety-two, 93 ninety-three, 94 ninety-four, 95 ninety-five, 96 ninety-six, 97 ninety-seven, 98 ninety-eight, 99 ninety-nine, 100 one hundred।'],
+ ['D. 81–100 পর্যন্ত সংখ্যা লেখো ও বলো।','81 থেকে 100 পর্যন্ত ধারাবাহিক সংখ্যা লিখবে; শেষ দশটি উপরে দেওয়া আছে।'],
+ ['E–F. দেওয়া pair 13/30, 14/40 … 19/90 বলো এবং 1–100 বলো/লেখো।','13 <b>thirteen</b>, 30 <b>thirty</b>; 14 fourteen, 40 forty; 15 fifteen, 50 fifty; 16 sixteen, 60 sixty; 17 seventeen, 70 seventy; 18 eighteen, 80 eighty; 19 nineteen, 90 ninety।']]),
+englishActivityCard(61,4,6,'Ordinal numbers',[
+ ['A–B. 12 মাসের নাম পড়ো ও ক্রমানুসারে বলো।','January, February, March, April, May, June, July, August, September, October, November, December।'],
+ ['C. 1st–10th ordinal number লেখো এবং মাসের ordinal বলো।','1st first, 2nd second, 3rd third, 4th fourth, 5th fifth, 6th sixth, 7th seventh, 8th eighth, 9th ninth, 10th tenth। January first … December twelfth।'],
+ ['D–E. bookshelf-এর ordinal অনুযায়ী নাম বসাও এবং home library project করো।','Shelf number অনুযায়ী <b>1st, 2nd, 3rd…</b> ব্যবহার করবে; নিজের home library-তে আলো, বসার জায়গা ও numbered shelf থাকবে।'],
+ ['Let’s practise 1–3. মাসের নাম পূরণ, short form এবং বাক্যে ordinal পূরণ করো।','Months: <b>January, February, March, April, May, June, July, August, September, October</b>। Short form: Second <b>2nd</b>, third <b>3rd</b>, Eighth <b>8th</b>। January <b>first</b>, March <b>third</b>, April <b>fourth</b>, July <b>seventh</b>, September <b>ninth</b>।']]),
+englishActivityCard(65,5,1,'Joyful school time 1',[
+ ['C(1–5). Porshi কোথায় থাকে, Padma group কী পরিষ্কার করে, কে supervise করে, Surma কখন garden পরিষ্কার করে এবং group-এ কয়টি class?','Porshi lives in <b>Kushtia</b>. Padma cleans the <b>classroom</b>. The <b>Headteacher</b> supervises. Surma cleans garden in the <b>4th week</b>. There are <b>three classes</b>: 3, 4 and 5।'],
+ ['D. primary, teacher, 3rd, Jamuna, love দিয়ে শূন্যস্থান পূরণ করো।','<b>primary; teacher; 3rd; Jamuna; love</b>।'],
+ ['E. নিজের cleanliness plan বানাও।','<b>নমুনা:</b> 1st week — Friday — clean dress. নিজের পরিকল্পনায় classroom, hands বা school garden যোগ করতে পারো।'],
+ ['Let’s practise 1. পাঁচটি True/False লেখো।','a <b>False</b>; b <b>True</b>; c <b>True</b>; d <b>False</b>; e <b>True</b>।'],
+ ['Let’s practise 2. capital letter ঠিক করে বাক্য লেখো।','<b>Kamal is Jamal’s elder brother. They live in Dinajpur. The litchies of Dinajpur are famous in Bangladesh.</b>']]),
+englishActivityCard(68,5,2,'Joyful school time 2',[
+ ['C(1–4). special need student কে, Rani বাইরে lesson-এ কীভাবে যায়, story book কোথা থেকে নেয়, কেন story book পড়ো?','<b>Rani</b> is a special need student. She joins in a <b>wheelchair</b>. Students borrow from the <b>school library</b>. <b>We read story books to learn and enjoy.</b>'],
+ ['D. capital letter ঠিক করে বাক্য লেখো।','<b>Porshi and Rani go to school. Moloy is their friend. His village is Fulbari. The river Padma flows by his village. Friday and Saturday are their holidays.</b>'],
+ ['E. text থেকে noun, pronoun ও verb আলাদা করো।','Noun: <b>Rani, Porshi, school, chair, library</b>; Pronoun: <b>she, they, her</b>; Verb: <b>goes, sits, enjoy, borrow</b>।'],
+ ['F. circle-এর শব্দ দিয়ে বাক্য বানাও।','<b>Rani and Porshi are neighbours. She goes to school. They enjoy the school time.</b>'],
+ ['Let’s practise 1–2. শব্দ সাজাও; noun circle, pronoun underline, verb tick দাও।','a <b>Sujan is a special need child.</b> b <b>Kajal and Kanta are neighbours.</b> c <b>Aurup is attentive in the class.</b> d <b>Arnab enjoys the classes.</b> e <b>Students clean their school on Sunday.</b><br>Noun: <b>chair, Sunday, library</b>; Pronoun: <b>they, these, her</b>; Verb: <b>borrow, sit, play</b>।']]),
+englishActivityCard(72,5,3,"Osman’s village life",[
+ ['B(1–3). Osman কোথা থেকে story book নেয়, কখন দাঁত মাজে, কখন পড়ে?','1 <b>the village library</b>; 2 <b>before breakfast</b>; 3 <b>morning and the evening</b>।'],
+ ['C. get up, beautiful, help, breakfast, study-এর similar meaning মেলাও।','get up—<b>rise</b>; beautiful—<b>pretty</b>; help—<b>support</b>; breakfast—<b>morning meal</b>; study—<b>learn</b>।'],
+ ['D–G. noun/pronoun/verb ছক, My village life paragraph, tree ও cat-এর parts লেখো।','Noun: <b>Osman, village, river, books</b>; Pronoun: <b>he, his</b>; Verb: <b>lives, studies, plays, borrows</b>। Tree: <b>root, trunk, branch, twig, leaf</b>। Cat: <b>head, eye, ear, leg, tail</b>। <b>নমুনা paragraph:</b> My village is beautiful. It has green fields and trees. I play with my friends. I love my village.'],
+ ['Let’s practise 1–3. শব্দ মেলাও, parts of speech ও MCQ দাও।','get up—<b>wake up</b>; ready—<b>prepare</b>; borrow—<b>loan</b>; study—<b>read</b>; proud—<b>boast</b>। Noun: <b>breakfast, school, Friday</b>; Pronoun: <b>he, his</b>; Verb: <b>live, borrow, enjoy</b>। MCQ: <b>village; father; library</b>।']]),
+englishActivityCard(76,5,4,"Oyshi’s city life",[
+ ['B(1–3). Oyshi কার সঙ্গে school যায়, art class কয় দিন করে, green city-তে কী বেশি?','She goes with her <b>father</b>. She attends art class <b>two days</b>. A green city has more <b>trees</b>।'],
+ ['C–D. শব্দের অর্থ মেলাও এবং জumbled words সাজাও।','return—<b>come back</b>; parents—<b>mother and father</b>; borrow—<b>take something from someone</b>; academy—<b>school</b>। Sentences: <b>He presents the group work. My shirt is beautiful. We want a green city. Titu keeps his city clean. Friday is a holiday.</b>'],
+ ['E–H. ছবি নিয়ে বাক্য, My city life paragraph, village/city পছন্দের তালিকা ও বাজারের vegetable list করো।','<b>নমুনা:</b> I go to school using the zebra crossing. I water plants in our garden. I like gardening in the city. Vegetable list: <b>cabbage, cauliflower, pumpkin, ginger, bean, lady’s finger</b>—যা বাজারে দেখেছ লিখবে।'],
+ ['Let’s practise 1–2. True/False ও short answer দাও।','T/F: a <b>False</b>; b <b>True</b>; c <b>True</b>; d <b>True</b>; e <b>False</b>। She lives in <b>a city</b>; uses <b>zebra crossing and foot overbridge</b>; helps by <b>gardening and watering plants</b>; loves <b>a green city</b>; yes, because she enjoys school, garden, art class and library.']]),
+englishActivityCard(81,5,5,'Rhyme: Rain Rain Go Away',[
+ ['A. পরিবারের সদস্যদের তালিকা করো ও সঙ্গীর সঙ্গে share করো।','<b>নমুনা:</b> father, mother, brother, sister, baby. নিজের পরিবারের সত্য তালিকা লিখবে।'],
+ ['B–C. rhyme-এ family member শুনলে clap দাও এবং একা/জোড়ায় পড়ো।','ছড়ায় <b>daddy, mommy, brother, sister, baby, all the family</b> এলে clap করবে।']]),
+englishActivityCard(83,6,1,'Good habits',[
+ ['A–D. ছবি দেখে বলো, hygiene word colour করো, Nusair-এর text পড়ো এবং ছবির নিচে শব্দ লেখো।','Cleanliness words: <b>soap, washing hands, clothes, fingernails, shoes, eyes</b>। Nusair খেলতে গিয়ে dirty clothes and shoes পরে ফেরে; handwashing good habit।'],
+ ['E. পাঁচটি True/False করো।','a <b>False</b>; b <b>False</b> (his mother notices); c <b>True</b>; d <b>False</b>; e <b>True</b>।'],
+ ['G. apple, door, book, baby, box, fish, bench, plate-এর plural লেখো।','<b>apples, doors, books, babies, boxes, fishes, benches, plates</b>।'],
+ ['H–I(a–h). কে খেলে, Nusair কেমন দেখায়, কে ময়লা দেখে, কী অসুস্থ করে, কেন/কী দিয়ে হাত ধোই, মা কী advice দেয়, কোন অভ্যাস healthy রাখে?','a <b>Nusair</b>. b <b>He looks dirty.</b> c <b>His mother, Jesmin Akter.</b> d <b>Germs in dirt.</b> e <b>To clean germs and stay healthy.</b> f <b>Soap and water.</b> g <b>Wash hands before eating and after playing.</b> h <b>Washing hands regularly.</b>'],
+ ['Let’s practise 1–2. অক্ষর সাজাও ও শব্দের অর্থ মেলাও।','<b>Shoe, Dirt, Hand, Soap, Eye, Cloth</b>। enjoy—<b>to like something</b>; dirty—<b>not clean</b>; germ—<b>virus</b>; finger—<b>parts of the body</b>; wash—<b>clean with water</b>।']]),
+englishActivityCard(89,6,2,'Steps of washing hands',[
+ ['A–B. water, soap, tap, towel দেখো এবং হাত ধোয়ার 1–8 ধাপ পড়ো।','Open tap and wet hands; turn off tap; apply soap; rub 20 seconds; clean back/fingers/nails; rinse; turn off; wipe with clean towel।'],
+ ['C. ছয়টি ধাপ 1–6 ক্রমে সাজাও।','1 <b>Open tap, wet hands, turn tap off</b>; 2 <b>Put soap</b>; 3 <b>Rub 20 seconds</b>; 4 <b>Rub back, between fingers and under nails</b>; 5 <b>Rinse</b>; 6 <b>Wipe with towel</b>।'],
+ ['D. rub, use, wash, rinse, turn, wipe দিয়ে শূন্যস্থান পূরণ করো।','a <b>Rub</b>; b <b>Use</b>; c <b>Wash</b>; d <b>Rinse</b>; e <b>Turn</b>; f <b>Wipe</b>।'],
+ ['E–F. healthy থাকার ছবি/লেখা এবং wash block-এ ধাপ মেনে হাত ধোও।','<b>নমুনা:</b> I do physical exercise. I eat healthy food. I sleep on time. এরপর Activity B-এর ধাপে হাত ধুবে।'],
+ ['Let’s practise 1–3. T/F, water/soap/tap/towel/dry দিয়ে বাক্য, এবং চারটি প্রশ্নের উত্তর।','T/F: <b>True, False, True, True, False</b>। বাক্য: Water is clean. I use soap. Turn off the tap. Use a towel. Dry your hands. Answers: prevent germs by <b>washing hands properly</b>; need <b>water, soap, tap and towel</b>; clean <b>back, fingers and nails</b>; dry with <b>a clean towel</b>।']]),
+englishActivityCard(93,6,3,'When to wash our hands',[
+ ['A–D. ছবি-পদবন্ধ মেলাও, কখন হাত ধোও তার তালিকা বলো এবং Before/After ছক পূরণ করো।','Wash <b>before and after eating; before/after touching nose, mouth, eyes or wound; after toilet, coughing/sneezing, touching pet/animal, playing outside, touching garbage</b>। Before: <b>eating, touching wound</b>; After: <b>toilet, sneezing, garbage, pet, playing</b>।'],
+ ['E(1–3). কীভাবে, কেন ও কখন হাত ধোও?','I wash with <b>soap and clean water</b>. I wash to <b>remove germs and stay healthy</b>. I wash at all the times listed in Activity B.'],
+ ['F. clue ব্যবহার করে handwashing poster বানাও।','<b>Use clean water and soap. Rub your hands well. Wipe with a clean towel. Wash before eating. Wash after using the toilet.</b>'],
+ ['Let’s practise 1. habit, food, toilet, animal, healthy দিয়ে শূন্যস্থান পূরণ করো।','<b>habit; food; toilet; animal; healthy</b>।']]),
+englishActivityCard(97,7,1,'Water pollution',[
+ ['A–C. শব্দ দেখে বলো এবং Shihab–Kaniz-এর river pollution text পড়ো।','Words: <b>danger, river, bathing, washing clothes, rubbish, swimming</b>। Water is polluted by rubbish, polythene and plastic.'],
+ ['D–E. পাঁচটি True/False ও false বাক্য ঠিক করো।','a <b>True</b>; b <b>True</b>; c <b>False</b> (They see people bathing/washing clothes); d <b>True</b>; e <b>False</b> (Fish cannot swim easily in dirty water).'],
+ ['F–G(a–f). তারা কী দেখে, কেন upset, কী floating, মাছ কেন danger, পানি কীভাবে polluted, clean রাখবে কীভাবে?','They see <b>people bathing/washing and a man throwing rubbish</b>. They are upset because water is polluted. They see <b>polythene bags and plastic bottles</b>. Fish get caught in bags. Rubbish/plastic pollutes water. <b>Do not throw waste; keep rubbish in a fixed place.</b>'],
+ ['Let’s practise 1–2. শব্দের অর্থ মেলাও এবং শূন্যস্থান পূরণ করো।','danger—<b>at risk</b>; upset—<b>sad</b>; bath—<b>washing with water</b>; rubbish—<b>garbage</b>; pollute—<b>make something dirty</b>। Blanks: <b>river, rubbish, request, dirty, clean</b>।']]),
+englishActivityCard(101,7,2,'Uses of water',[
+ ['B. water-এর source ও use বিষয়ক text পড়ো।','Main sources: <b>oceans, rivers, rain and ponds</b>. Uses: <b>drinking, cooking, bathing, cleaning, crops</b>।'],
+ ['C. life, water, soil, damages, harmful দিয়ে শূন্যস্থান পূরণ করো।','<b>life; water; soil; damages; harmful</b>।'],
+ ['D–E(a–e). source, daily use, trees কেন soil থেকে নেয়, pollution থেকে কীভাবে বাঁচাব, fixed place কেন—উত্তর দাও।','Sources are <b>oceans, rivers, rain and ponds</b>. We drink, cook, bathe and clean. Trees need water <b>for growth</b>. Do not throw rubbish/plastic into water. Fixed place keeps rubbish from polluting water.'],
+ ['Let’s practise 1–3. letters সাজাও, T/F এবং বাক্য লেখো।','<b>Plant, Rain, Soil, Crop, Farmer</b>। T/F: <b>True, False, True, False, False</b>। বাক্য: A plant needs water. There is a pond. Pollution is harmful. I drink clean water. Do not throw rubbish.']]),
+englishActivityCard(104,7,3,'Saving water',[
+ ['A. ছয়টি water-saving tip পড়ো।','Turn off tap while brushing/after washing; do not use too much soap or water; drink all water in glass; do not misuse water when watering plants।'],
+ ['B(1–3). teeth brushing, too much soap ও glass-এর সব পানি পান বিষয়ে সঠিক উত্তর দাও।','1 <b>turn off the tap</b>; 2 <b>misuse water</b>; 3 <b>save water</b>।'],
+ ['C–D(a–d). bath, plants, school time ও tips কেন—উত্তর দাও।','Use only needed water while bathing. Water plants carefully to avoid waste. At school use water carefully in wash block, toilet and garden. We follow tips to <b>save clean water</b>.'],
+ ['E. clue থেকে family water-saving paragraph লেখো।','<b>নমুনা:</b> We use water for drinking, cooking and washing. My family uses water carefully. I turn off the tap while brushing and drink all the water in my glass. I tell my family not to waste water.']]),
+englishActivityCard(107,7,4,'Rhyme: Sing a Rainbow',[
+ ['A–B. rainbow-এ কয়টি colour নিয়ে কথা বলো এবং rhyme শুনে colour name underline করো।','Colours: <b>red, yellow, indigo, green, violet, orange, blue</b>—মোট <b>seven</b>।'],
+ ['C–D. poem chorus ও individual-এ পড়ো; সব colour দিয়ে rainbow আঁকো।','উপরের সাতটি রং ব্যবহার করে rainbow আঁকবে। <b>Can</b> ability বোঝায়: <b>I can sing. I can listen.</b>']]),
+englishActivityCard(109,8,1,'The Ant and the Grasshopper',[
+ ['A–B. ছবি রং করো; গল্প শুনে group-এ পড়ো।','Ant ও grasshopper grassy field-এ থাকে। Ant winter-এর জন্য food store করে; grasshopper কাজ না করে sun উপভোগ করে।'],
+ ['C(1–4). grasshopper ও ant summer/winter-এ কী করে—সঠিক option দাও।','1 <b>enjoying the sun</b>; 2 <b>carrying an ear of corn</b>; 3 <b>without food</b>; 4 <b>happily at her cozy home</b>।'],
+ ['D(1–5). কোথায় থাকে, ant কী নেয়, grasshopper কী বলে, ant কী reply দেয়, winter-এ কী হয়?','They live in <b>a grassy field</b>. Ant carries <b>an ear of corn</b>. Grasshopper says <b>Come and enjoy the sun.</b> Ant says <b>Winter is coming. Let’s collect corns.</b> In winter grasshopper finds no food, starves and becomes sad.'],
+ ['E. Summer/Winter column-এ words লেখো।','Summer: <b>sunny, enjoying the sun, warm day</b>. Winter: <b>dry leaves, gloomy, cold</b>।'],
+ ['F–H. roleplay, punctuation চেনা ও passage-এ punctuation বসাও।','H: <b>What a bright day! The grasshopper is dancing, singing and playing in the sun. What is the ant doing? She is carrying an ear of corn.</b>'],
+ ['Let’s practise 1–3. meaning, gaps ও punctuation।','sunny—<b>bright</b>; carry—<b>bear</b>; starve—<b>become weak from lack of food</b>; plenty—<b>enough</b>; cozy—<b>comfortable</b>; grassy—<b>full of grass</b>। Gaps: <b>grassy, sunny, passing by, falling down, starves</b>। Punctuation: <b>I like apple, orange and banana. Hello! How are you? It is a beautiful day. What time is it now? Bravo! You did a great job.</b>']]),
+englishActivityCard(115,8,2,'Enjoying a hill festival',[
+ ['A–B. ছবি রং করো; Anika ও Savana-এর hill festival story শুনে group-এ পড়ো।','Anika lives in <b>the plain land</b>; Savana is her hill friend. Phool Biju-তে girls float flowers, Mulbiju-তে young people spray water, new year is Gajjya Pajjya.'],
+ ['B(1–4). festival কোথায়, girls পানিতে কী করছে, boys/girls কী করছে, দুই মেয়ে কীভাবে নাচছে?','Festival is in <b>the hills</b>. Girls are <b>floating flowers</b>. Boys and girls are <b>spraying water</b>. The girls are <b>dancing happily</b>.'],
+ ['C(1–5). True/False ও false statement ঠিক করো।','1 <b>True</b>. 2 <b>False</b>: Anika is from the plain land. 3 <b>True</b>. 4 <b>False</b>: spraying water washes away sorrows. 5 <b>False</b>: new year is Gajjya Pajjya.'],
+ ['D(1–5). Anika কোথায় থাকে, hill girl-এর নাম, welcome কীভাবে, ফুল ভাসায় কেন, Mulbiju-তে কী করে?','Anika lives in <b>the plain land</b>. The hill girl is <b>Savana</b>. She welcomes Anika by <b>spraying water</b>. They float flowers wishing <b>a happy new year</b>. On Mulbiju they <b>spray water on each other</b>.'],
+ ['E–G. festival scene act out, negative sentence ও festival picture আঁকো।','Negative: <b>Anika and Savana are not friends. Anika does not live in the plain land. Savana is not a hill girl. The hill girl does not float flowers in the water.</b>'],
+ ['Let’s practise 1–3. sentence match, gaps ও festival/activity table পূরণ করো।','Matches: Anika lives—<b>in the plain land</b>; I enjoy—<b>the festival very much</b>; On Phool Biju—<b>hill girls float flowers wishing a happy new year</b>; On Mulbiju—<b>young boys and girls spray water</b>; house—<b>decorated with colours and flowers</b>; Savana—<b>welcomes Anika to her house spraying water</b>। Gaps: <b>attend, visit, decorated, entertains, spray</b>। Festivals: <b>Phool Biju—float flowers; Mulbiju—spray water; Gajjya Pajjya—cultural shows and carnival</b>。']])
+];
+
 const englishSolutions = [
   ...englishUnit1Solutions,
-  englishLesson(21,2,1,"Talking with friends",[["Ask a friend about a favourite game."],["Answer: “What is your favourite subject?”"],["Complete: “I like to play ___.”"]],[["Ask a friend about a favourite game.","“What is your favourite game?”"],["Answer: “What is your favourite subject?”","“English is my favourite subject.”"],["Complete: “I like to play ___.”","“I like to play football.”"]]),
-  englishLesson(23,2,2,"Numbers 31–50",[["Write 35 in words."],["Write “forty-two” in figures."],["What number comes before 50?"]],[["Write 35 in words.","thirty-five"],["Write “forty-two” in figures.","42"],["What number comes before 50?","49"]]),
-  englishLesson(26,2,3,"My family",[["Complete: “This is my ___.”"],["Who is your father’s daughter?"],["Write one sentence about your family."]],[["Complete: “This is my ___.”","“This is my mother.”"],["Who is your father’s daughter?","She is my sister."],["Write one sentence about your family.","“I love my family.”"]]),
-  englishLesson(28,2,4,"Rhyme: It's a Happy House",[["Is the house happy or sad?"],["Complete: “It is a ___ house.”"],["Say one thing in your house."]],[["Is the house happy or sad?","It is happy."],["Complete: “It is a ___ house.”","“It is a happy house.”"],["Say one thing in your house.","“There is a table in my house.”"]]),
-  englishLesson(29,2,5,"My friend",[["Write a sentence about a friend’s name."],["Complete: “He is my ___.”"],["Write one good quality of a friend."]],[["Write a sentence about a friend’s name.","“My friend’s name is Sohan.”"],["Complete: “He is my ___.”","“He is my friend.”"],["Write one good quality of a friend.","“He is helpful.”"]]),
-  englishLesson(31,2,6,"Numbers 51–70",[["Write 60 in words."],["Write “sixty-eight” in figures."],["What number comes after 69?"]],[["Write 60 in words.","sixty"],["Write “sixty-eight” in figures.","68"],["What number comes after 69?","70"]]),
-  englishLesson(34,3,1,"Simple commands",[["Complete the command: “___ down.”"],["Complete the command: “___ your book.”"],["What do you say to ask someone to be quiet?"]],[["Complete the command: “___ down.”","“Sit down.”"],["Complete the command: “___ your book.”","“Open your book.”"],["What do you say to ask someone to be quiet?","“Be quiet, please.”"]]),
-  englishLesson(38,3,2,"Following and giving instructions",[["What do you say before crossing a road?"],["Complete: “___ in a line.”"],["Write an instruction for washing hands."]],[["What do you say before crossing a road?","“Look right and left.”"],["Complete: “___ in a line.”","“Stand in a line.”"],["Write an instruction for washing hands.","“Wash your hands with soap.”"]]),
-  englishLesson(40,3,3,"Rhyme: Hello Hello",[["Write the first greeting word in the rhyme."],["How do you reply to “Hello”?"],["Say the rhyme with a clear voice."]],[["Write the first greeting word in the rhyme.","Hello"],["How do you reply to “Hello”?","“Hello!”"],["Say the rhyme with a clear voice.","Read it aloud with correct rhythm and pronunciation."]]),
-  englishLesson(42,3,4,"Following and giving instructions",[["Complete: “___ the door, please.”"],["Which is correct: “Run in the class” or “Walk in the class”?"],["Write one classroom instruction."]],[["Complete: “___ the door, please.”","“Close the door, please.”"],["Which is correct: “Run in the class” or “Walk in the class”?","“Walk in the class.”"],["Write one classroom instruction.","“Listen to the teacher.”"]]),
-  englishLesson(44,3,5,"Making requests and responding properly",[["Make a polite request for a pen."],["Respond to “Please help me.”"],["Which word makes a request polite?"]],[["Make a polite request for a pen.","“May I have your pen, please?”"],["Respond to “Please help me.”","“Yes, I will help you.”"],["Which word makes a request polite?","please"]]),
-  englishLesson(46,3,6,"Numbers 71–90",[["Write 75 in words."],["Write “eighty-nine” in figures."],["What number comes before 80?"]],[["Write 75 in words.","seventy-five"],["Write “eighty-nine” in figures.","89"],["What number comes before 80?","79"]]),
-  englishLesson(48,4,1,"Say the middle sounds /æ/ and /e/",[["Choose the word with /æ/: cat or pen."],["Choose the word with /e/: bed or bag."],["Write a word with the /æ/ sound."]],[["Choose the word with /æ/: cat or pen.","cat"],["Choose the word with /e/: bed or bag.","bed"],["Write a word with the /æ/ sound.","hat"]]),
-  englishLesson(52,4,2,"Say the middle sounds /iː/ and /ɪ/",[["Choose the word with /iː/: sheep or ship."],["Choose the word with /ɪ/: sit or seat."],["Write a word with the /iː/ sound."]],[["Choose the word with /iː/: sheep or ship.","sheep"],["Choose the word with /ɪ/: sit or seat.","sit"],["Write a word with the /iː/ sound.","green"]]),
-  englishLesson(54,4,3,"Rhyme: Row, Row, Row Your Boat",[["What do you row in the rhyme?"],["Complete: “Row, row, row your ___.”"],["How should you say a rhyme?"]],[["What do you row in the rhyme?","A boat."],["Complete: “Row, row, row your ___.”","“Row, row, row your boat.”"],["How should you say a rhyme?","With clear pronunciation and rhythm."]]),
-  englishLesson(56,4,4,"Say the middle sounds /ɑː/ and /ʌ/",[["Choose the word with /ɑː/: car or cup."],["Choose the word with /ʌ/: sun or sand."],["Write a word with the /ʌ/ sound."]],[["Choose the word with /ɑː/: car or cup.","car"],["Choose the word with /ʌ/: sun or sand.","sun"],["Write a word with the /ʌ/ sound.","bus"]]),
-  englishLesson(59,4,5,"Numbers 91–100",[["Write 100 in words."],["Write “ninety-four” in figures."],["What number comes after 99?"]],[["Write 100 in words.","one hundred"],["Write “ninety-four” in figures.","94"],["What number comes after 99?","100"]]),
-  englishLesson(61,4,6,"Ordinal numbers",[["Write the ordinal of 1."],["Write the ordinal of 3."],["Complete: “I am the ___ student in the line.”"]],[["Write the ordinal of 1.","first (1st)"],["Write the ordinal of 3.","third (3rd)"],["Complete: “I am the ___ student in the line.”","“I am the second student in the line.”"]]),
-  englishLesson(65,5,1,"Joyful school time 1",[["Where do children go to learn?"],["Complete: “I go to school in the ___.”"],["Write one thing you do at school."]],[["Where do children go to learn?","They go to school to learn."],["Complete: “I go to school in the ___.”","“I go to school in the morning.”"],["Write one thing you do at school.","“I read books at school.”"]]),
-  englishLesson(68,5,2,"Joyful school time 2",[["What do you do in a class?"],["Complete: “We ___ and learn at school.”"],["Write a sentence about your teacher."]],[["What do you do in a class?","“I listen to my teacher.”"],["Complete: “We ___ and learn at school.”","“We play and learn at school.”"],["Write a sentence about your teacher.","“My teacher is kind.”"]]),
-  englishLesson(72,5,3,"Oshman's village life",[["Where does Oshman live?"],["Name one thing seen in a village."],["Complete: “There are green ___ in the village.”"]],[["Where does Oshman live?","Oshman lives in a village."],["Name one thing seen in a village.","A field."],["Complete: “There are green ___ in the village.”","“There are green fields in the village.”"]]),
-  englishLesson(76,5,4,"Oyshi's city life",[["Where does Oyshi live?"],["Name one thing seen in a city."],["Complete: “There are many ___ in the city.”"]],[["Where does Oyshi live?","Oyshi lives in a city."],["Name one thing seen in a city.","A tall building."],["Complete: “There are many ___ in the city.”","“There are many roads in the city.”"]]),
-  englishLesson(81,5,5,"Rhyme: Rain Rain Go Away",[["What weather is in the rhyme?"],["Complete: “Rain, rain, go ___.”"],["What do children want to do?"]],[["What weather is in the rhyme?","Rainy weather."],["Complete: “Rain, rain, go ___.”","“Rain, rain, go away.”"],["What do children want to do?","They want to play."]]),
-  englishLesson(83,6,1,"Good habits",[["When should you brush your teeth?"],["Complete: “I keep my body ___.”"],["Write one good habit."]],[["When should you brush your teeth?","I brush my teeth in the morning and at night."],["Complete: “I keep my body ___.”","“I keep my body clean.”"],["Write one good habit.","“I wear clean clothes.”"]]),
-  englishLesson(89,6,2,"Steps of washing hands",[["What should you use to wash your hands?"],["When should you wash your hands?"],["What do you do after washing?"]],[["What should you use to wash your hands?","Soap and clean water."],["When should you wash your hands?","Before eating and after using the toilet."],["What do you do after washing?","I dry my hands with a clean towel."]]),
-  englishLesson(93,6,3,"When to wash our hands",[["Should you wash hands before eating?"],["Should you wash hands after playing?"],["Why do we wash our hands?"]],[["Should you wash hands before eating?","Yes, I should."],["Should you wash hands after playing?","Yes, I should."],["Why do we wash our hands?","We wash our hands to remove dirt and germs."]]),
-  englishLesson(97,7,1,"Water pollution",[["What makes water dirty?"],["Should we throw rubbish into a river?"],["Write one way to keep water clean."]],[["What makes water dirty?","Waste and rubbish make water dirty."],["Should we throw rubbish into a river?","No, we should not."],["Write one way to keep water clean.","“Do not throw waste into water.”"]]),
-  englishLesson(101,7,2,"Uses of water",[["Name two uses of water."],["Complete: “We need water to ___.”"],["Can we live without water?"]],[["Name two uses of water.","We use water for drinking and washing."],["Complete: “We need water to ___.”","“We need water to cook.”"],["Can we live without water?","No, we cannot."]]),
-  englishLesson(104,7,3,"Saving water",[["Should we keep a tap running?"],["Complete: “Turn off the ___ after use.”"],["Why should we save water?"]],[["Should we keep a tap running?","No, we should not."],["Complete: “Turn off the ___ after use.”","“Turn off the tap after use.”"],["Why should we save water?","We should save water because it is precious."]]),
-  englishLesson(107,7,4,"Rhyme: Sing a Rainbow",[["What can you see after rain?"],["Name one colour of a rainbow."],["How should you recite the rhyme?"]],[["What can you see after rain?","A rainbow."],["Name one colour of a rainbow.","Red."],["How should you recite the rhyme?","With a joyful voice and rhythm."]]),
-  englishLesson(109,8,1,"The Ant and the Grasshopper",[["Who worked and stored food?"],["Who did not prepare for winter?"],["What is the lesson of the story?"]],[["Who worked and stored food?","The ant worked and stored food."],["Who did not prepare for winter?","The grasshopper did not prepare for winter."],["What is the lesson of the story?","We should work hard and prepare for the future."]]),
-  englishLesson(114,8,2,"Enjoying a hill festival",[["Where is the festival held?"],["What should we do at a festival?"],["Write one sentence about a festival."]],[["Where is the festival held?","It is held in a hill area."],["What should we do at a festival?","We should enjoy it politely and respect others."],["Write one sentence about a festival.","“People wear colourful clothes at the festival.”"]])
+  ...englishCompleteRest
 ];
 const islamSolutions = [
   {p:29,l:'অধ্যায় ১ · সৃষ্টি ও স্রষ্টা',q:'১–৪',type:'অধ্যায়ের প্রশ্নভিত্তিক সমাধান',t:sourceQuestions([
