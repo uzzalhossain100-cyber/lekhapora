@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b5d4c" />
-  <title>lekhapora — শ্রেণিভিত্তিক পাঠ্যবই ও সমাধান</title>
+  <title>EducareBD — শ্রেণিভিত্তিক পাঠ্যবই ও সমাধান</title>
   <style>
     :root{--ink:#17342c;--muted:#62776f;--green:#08735d;--green-2:#0c9475;--mint:#e9f7f1;--cream:#fffdf7;--line:#d8e8df;--orange:#f59138;--red:#e95545;--shadow:0 14px 35px rgba(16,65,53,.10)}
     *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--cream);color:var(--ink);font-family:"Noto Sans Bengali","Hind Siliguri","SolaimanLipi",Arial,sans-serif;line-height:1.58} button,input{font:inherit} button{cursor:pointer}
@@ -24,14 +24,14 @@
   </style>
 </head>
 <body>
-  <div class="topbar"><div class="wrap"><span>📚 বাংলাদেশের শিক্ষার্থীদের জন্য সহজ lekhapora</span><span><b>তৃতীয় শ্রেণি</b> · বাংলা প্রথম পত্র প্রস্তুত</span></div></div>
-  <header><div class="wrap nav"><div class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 5.8A15.3 15.3 0 0 1 11.7 8v12A15.3 15.3 0 0 0 3 17.8z"/><path d="M21 5.8A15.3 15.3 0 0 0 12.3 8v12a15.3 15.3 0 0 1 8.7-2.2z"/></svg></span>lekhapora</div><nav class="nav-links"><button onclick="scrollToId('classes')">শ্রেণিসমূহ</button><button onclick="openBanglaBook()">বাংলা প্রথম পত্র</button><button onclick="scrollToId('how')">কীভাবে ব্যবহার করবেন</button></nav></div></header>
+  <div class="topbar"><div class="wrap"><span>📚 বাংলাদেশের শিক্ষার্থীদের জন্য সহজ EducareBD</span><span><b>তৃতীয় শ্রেণি</b> · বাংলা প্রথম পত্র প্রস্তুত</span></div></div>
+  <header><div class="wrap nav"><div class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 5.8A15.3 15.3 0 0 1 11.7 8v12A15.3 15.3 0 0 0 3 17.8z"/><path d="M21 5.8A15.3 15.3 0 0 0 12.3 8v12a15.3 15.3 0 0 1 8.7-2.2z"/></svg></span>EducareBD</div><nav class="nav-links"><button onclick="scrollToId('classes')">শ্রেণিসমূহ</button><button onclick="openBanglaBook()">বাংলা প্রথম পত্র</button><button onclick="scrollToId('how')">কীভাবে ব্যবহার করবেন</button></nav></div></header>
   <main>
     <section class="hero"><div class="wrap hero-grid"><div><span class="eyebrow"><span class="dot"></span> পাঠ্যবই · অনুশীলনী · সহজ সমাধান</span><h1>বই পড়া হবে <span>আরও সহজ</span>, শেখা হবে আরও সুন্দর</h1><p>প্রথম থেকে দ্বাদশ শ্রেণি পর্যন্ত বইয়ের তালিকা থেকে পছন্দের বই বেছে নিন। তৃতীয় শ্রেণির <b>বাংলা প্রথম পত্র</b>-এর জন্য মূল বই ও পৃষ্ঠাভিত্তিক অনুশীলনীর সহায়ক উত্তর রয়েছে।</p><div class="hero-actions"><button class="primary" onclick="scrollToId('classes')">শ্রেণি বেছে নিন →</button><button class="outline" onclick="openBanglaBook()">বাংলা প্রথম পত্র দেখুন</button></div><div class="progress-bar"><div class="progress-icon">✏️</div><div><strong>উত্তর দেখার আগে নিজে চেষ্টা করো</strong><span>প্রতিটি উত্তরের সঙ্গে বইয়ের পৃষ্ঠা ও প্রশ্ন নম্বর দেওয়া আছে।</span></div></div></div><div class="book-art" aria-hidden="true"><div class="float-tag tag-1">✓ বইয়ের তালিকা</div><div class="float-tag tag-2">পৃষ্ঠা অনুযায়ী উত্তর</div><div class="float-tag tag-3">১–১২ শ্রেণি</div><div class="book-cover"><div class="mini">আমার</div><h3>বাংলা<br>বই</h3><div class="book-class">তৃতীয় শ্রেণি</div><small>বাংলা প্রথম পত্র</small><div class="tree">🌳</div></div></div></div></section>
     <section id="classes"><div class="wrap"><div class="section-head"><div><h2>তোমার শ্রেণি বেছে নাও</h2><p>যে কোনো কার্ডে ক্লিক করলে সেই শ্রেণির পাঠ্যবইয়ের তালিকা দেখা যাবে।</p></div><span class="mini-note">১২টি শ্রেণি</span></div><div id="classGrid" class="class-grid"></div><div id="booksPanel" class="books-panel" aria-live="polite"></div><div id="bookRoute" class="book-route"></div><div id="solutions" class="solutions"></div></div></section>
     <section class="how" id="how"><div class="wrap"><div class="section-head"><div><h2>কীভাবে ব্যবহার করবে</h2><p>অল্প কয়েকটি ধাপে নিজের পড়ার সহায়ক সাজিয়ে নাও।</p></div></div><div class="steps"><div class="step"><div class="step-no">১</div><div><h3>শ্রেণি নির্বাচন</h3><p>প্রথম থেকে দ্বাদশ শ্রেণির মধ্যে নিজের শ্রেণিতে ক্লিক করো।</p></div></div><div class="step"><div class="step-no">২</div><div><h3>বই বেছে নাও</h3><p>তালিকা থেকে বিষয় নির্বাচন করো। তৃতীয় শ্রেণিতে বাংলা প্রথম পত্রটি সবার আগে আছে।</p></div></div><div class="step"><div class="step-no">৩</div><div><h3>প্রশ্ন মিলিয়ে উত্তর পড়ো</h3><p>সমাধানে পৃষ্ঠা নম্বর, প্রশ্ন নম্বর, প্রশ্ন এবং সহায়ক উত্তর একসঙ্গে পাবে।</p></div></div></div></div></section>
   </main>
-  <footer><div class="wrap"><div><b>lekhapora</b> · পড়ো, ভাবো, নিজের ভাষায় লেখো</div><div>তৃতীয় শ্রেণি · বাংলা প্রথম পত্র · সহায়ক সমাধান</div></div></footer>
+  <footer><div class="wrap"><div><b>EducareBD</b> · পড়ো, ভাবো, নিজের ভাষায় লেখো</div><div>তৃতীয় শ্রেণি · বাংলা প্রথম পত্র · সহায়ক সমাধান</div></div></footer>
 <script>
 const driveLink = 'https://drive.google.com/file/d/1DAElBr1yasE575mfzKMVYvndJUV_rIcm/view';
 const classNames = ['প্রথম','দ্বিতীয়','তৃতীয়','চতুর্থ','পঞ্চম','ষষ্ঠ','সপ্তম','অষ্টম','নবম','দশম','একাদশ','দ্বাদশ'];
