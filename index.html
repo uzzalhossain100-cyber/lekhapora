@@ -45,7 +45,7 @@ const classThreeBooks = [
   {id:'bangla',title:'বাংলা প্রথম পত্র',icon:'📕',link:driveLink,preview:drivePreview,hasSolutions:true},
   {id:'bangladesh',title:'বাংলাদেশ ও বিশ্বপরিচয়',icon:'🌏',hasSolutions:true,solutionStatus:'অধ্যায় ১–১২',link:'https://drive.google.com/file/d/17igGd7jR1cPSp0gEgNt-mbnjIcg3Plag/view',preview:'https://drive.google.com/file/d/17igGd7jR1cPSp0gEgNt-mbnjIcg3Plag/preview'},
   {id:'science',title:'প্রাথমিক বিজ্ঞান',icon:'🔬',hasSolutions:true,solutionStatus:'অধ্যায় ১–১১',link:'https://drive.google.com/file/d/13CfVmYCMfHQYKldvC5MK0OOTIWuOdm9Q/view',preview:'https://drive.google.com/file/d/13CfVmYCMfHQYKldvC5MK0OOTIWuOdm9Q/preview'},
-  {id:'islam',title:'ইসলাম শিক্ষা',icon:'☪️',link:'https://drive.google.com/file/d/1isd83RnC8lGCBOjBG-7AUxfyCtgI3vl4/view',preview:'https://drive.google.com/file/d/1isd83RnC8lGCBOjBG-7AUxfyCtgI3vl4/preview'},
+  {id:'islam',title:'ইসলাম শিক্ষা',icon:'☪️',hasSolutions:true,solutionStatus:'অধ্যায় ১–৫',link:'https://drive.google.com/file/d/1isd83RnC8lGCBOjBG-7AUxfyCtgI3vl4/view',preview:'https://drive.google.com/file/d/1isd83RnC8lGCBOjBG-7AUxfyCtgI3vl4/preview'},
   {id:'math',title:'প্রাথমিক গণিত',icon:'➗',hasSolutions:true,solutionStatus:'অধ্যায় ১–১৩',link:'https://drive.google.com/file/d/16boJDg2XlkCER8pF5QkGlrj89ZlLbRQZ/view',preview:'https://drive.google.com/file/d/16boJDg2XlkCER8pF5QkGlrj89ZlLbRQZ/preview'},
   {id:'english',title:'English For Today',icon:'🔤',link:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/view',preview:'https://drive.google.com/file/d/1kdlI9Yc4iEUUuKPp6r6eavpBRtKqgC5L/preview'}
 ];
@@ -232,6 +232,44 @@ const bangladeshSolutions = [
 
 function sourceQuestions(groups){return `<ol class="source-question-list">${groups.map(g=>`<li><b>${g[0]}</b><ol>${g[1].map(x=>`<li>${x[0]}</li>`).join('')}</ol></li>`).join('')}</ol>`}
 function pairedSolutions(groups){return groups.map((g,gi)=>`<div class="qa-group"><h4>${g[0]}</h4>${g[1].map((x,i)=>`<div class="qa-item"><div class="qa-question">প্রশ্ন ${i+1}: ${x[0]}</div><div class="qa-answer"><b>উত্তর:</b> ${x[1]}</div></div>`).join('')}</div>`).join('')}
+const islamSolutions = [
+  {p:29,l:'অধ্যায় ১ · সৃষ্টি ও স্রষ্টা',q:'১–৪',type:'অধ্যায়ের প্রশ্নভিত্তিক সমাধান',t:sourceQuestions([
+    ['সৃষ্টিজগৎ ও মহান আল্লাহ', [['এই বিশ্বজগৎ কে সৃষ্টি করেছেন?'],['আল্লাহর সৃষ্টির কয়েকটি উদাহরণ লেখো।'],['প্রকৃতির নিয়মশৃঙ্খলা থেকে আমরা কী বুঝতে পারি?'],['আল্লাহর প্রতি কৃতজ্ঞতা প্রকাশের উপায় কী?']]],
+    ['আচরণ ও ইবাদত', [['আল্লাহর দেওয়া নিয়ামতের অপচয় করা কেন ঠিক নয়?'],['সৃষ্টিজগতের প্রতি আমাদের দায়িত্ব কী?']]]
+  ]),a:pairedSolutions([
+    ['সৃষ্টিজগৎ ও মহান আল্লাহ', [['এই বিশ্বজগৎ কে সৃষ্টি করেছেন?','মহান আল্লাহ এই বিশ্বজগৎ সৃষ্টি করেছেন।'],['আল্লাহর সৃষ্টির উদাহরণ লেখো।','আকাশ, সূর্য, চাঁদ, নদী, পাহাড়, গাছপালা, পশুপাখি ও মানুষ আল্লাহর সৃষ্টি।'],['প্রকৃতির নিয়মশৃঙ্খলা থেকে কী বুঝি?','দিন-রাত, ঋতু পরিবর্তন ও গ্রহ-নক্ষত্রের নিয়মিত চলা থেকে আল্লাহর অসীম ক্ষমতা ও পরিকল্পনা সম্পর্কে বুঝি।'],['কৃতজ্ঞতা প্রকাশের উপায় কী?','আলহামদুলিল্লাহ বলব, ইবাদত করব এবং আল্লাহর দেওয়া নিয়ামত সঠিক কাজে ব্যবহার করব।']]],
+    ['আচরণ ও ইবাদত', [['নিয়ামতের অপচয় করা কেন ঠিক নয়?','পানি, খাবার ও অন্যান্য নিয়ামত অপচয় করলে অন্যের প্রয়োজন ব্যাহত হয় এবং এটি অকৃতজ্ঞতা।'],['সৃষ্টিজগতের প্রতি দায়িত্ব কী?','গাছপালা ও প্রাণীর যত্ন নেব, পরিবেশ পরিষ্কার রাখব এবং কোনো সৃষ্টি অযথা কষ্ট দেব না।']]]
+  ])},
+  {p:39,l:'অধ্যায় ২ · রাসুল (সা.) ও তাঁর সাহাবিগণের জীবনচরিত অনুসরণ',q:'১–৪',type:'অধ্যায়ের প্রশ্নভিত্তিক সমাধান',t:sourceQuestions([
+    ['রাসুল (সা.)-এর আদর্শ', [['হজরত মুহাম্মদ (সা.)-এর চারিত্রিক গুণগুলো কী?'],['তাঁকে আল-আমিন বলা হতো কেন?'],['রাসুল (সা.) শিশুদের সঙ্গে কেমন আচরণ করতেন?']]],
+    ['অনুসরণ', [['সাহাবি কাদের বলা হয়?'],['রাসুল (সা.)-এর আদর্শ অনুসরণ করলে কী উপকার হয়?']]]
+  ]),a:pairedSolutions([
+    ['রাসুল (সা.)-এর আদর্শ', [['হজরত মুহাম্মদ (সা.)-এর গুণগুলো কী?','তিনি সত্যবাদী, বিশ্বস্ত, দয়ালু, ক্ষমাশীল, ন্যায়পরায়ণ ও বিনয়ী ছিলেন।'],['তাঁকে আল-আমিন বলা হতো কেন?','তিনি সব সময় সত্য বলতেন এবং মানুষের আমানত বিশ্বস্ততার সঙ্গে রক্ষা করতেন; তাই তাঁকে আল-আমিন বলা হতো।'],['রাসুল (সা.) শিশুদের সঙ্গে কেমন আচরণ করতেন?','তিনি শিশুদের স্নেহ করতেন, তাদের সালাম দিতেন, সুন্দর কথা বলতেন এবং আদর করতেন।']]],
+    ['অনুসরণ', [['সাহাবি কাদের বলা হয়?','যাঁরা রাসুলুল্লাহ (সা.)-কে দেখেছেন, তাঁর ওপর ঈমান এনেছেন এবং মুসলিম অবস্থায় মৃত্যুবরণ করেছেন, তাঁদের সাহাবি বলা হয়।'],['রাসুল (সা.)-এর আদর্শ অনুসরণ করলে কী উপকার হয়?','আমরা সত্যবাদী, দয়ালু, শৃঙ্খলাবদ্ধ ও ন্যায়পরায়ণ মানুষ হতে পারি এবং সমাজে শান্তি বজায় থাকে।']]]
+  ])},
+  {p:49,l:'অধ্যায় ৩ · নৈতিক ও মানবিক গুণাবলি অর্জন',q:'১–৫',type:'অধ্যায়ের প্রশ্নভিত্তিক সমাধান',t:sourceQuestions([
+    ['নৈতিক গুণ', [['সততা কী?'],['সত্য কথা বলা কেন জরুরি?'],['মানবিক গুণের কয়েকটি উদাহরণ লেখো।'],['কাউকে কষ্ট দিলে কী করবে?']]],
+    ['দৈনন্দিন প্রয়োগ', [['বড়দের প্রতি কেমন আচরণ করবে?'],['বন্ধুর সঙ্গে ঝগড়া হলে কী করবে?']]]
+  ]),a:pairedSolutions([
+    ['নৈতিক গুণ', [['সততা কী?','কথা ও কাজে সত্য থাকা এবং প্রতারণা না করাকে সততা বলে।'],['সত্য কথা বলা কেন জরুরি?','সত্য বললে বিশ্বাস ও সম্মান পাওয়া যায় এবং সঠিক সিদ্ধান্ত নেওয়া সহজ হয়।'],['মানবিক গুণের উদাহরণ লেখো।','দয়া, সহানুভূতি, ক্ষমা, সহযোগিতা, ভালোবাসা ও দায়িত্ববোধ মানবিক গুণ।'],['কাউকে কষ্ট দিলে কী করবে?','ভুল স্বীকার করব, ক্ষমা চাইব এবং ভবিষ্যতে এমন কাজ না করার চেষ্টা করব।']]],
+    ['দৈনন্দিন প্রয়োগ', [['বড়দের প্রতি কেমন আচরণ করবে?','সালাম দেব, ভদ্রভাবে কথা বলব, সম্মান করব এবং প্রয়োজন হলে সাহায্য করব।'],['বন্ধুর সঙ্গে ঝগড়া হলে কী করবে?','রাগ না করে শান্তভাবে কথা বলব, ভুল বোঝাবুঝি মিটিয়ে নেব এবং ক্ষমা করব।']]]
+  ])},
+  {p:59,l:'অধ্যায় ৪ · ধর্মীয় সম্প্রীতি',q:'১–৪',type:'অধ্যায়ের প্রশ্নভিত্তিক সমাধান',t:sourceQuestions([
+    ['সম্প্রীতি', [['ধর্মীয় সম্প্রীতি বলতে কী বোঝায়?'],['অন্য ধর্মের মানুষের প্রতি কেমন আচরণ করবে?'],['ধর্ম নিয়ে কটূক্তি করা কেন ভুল?']]],
+    ['সহাবস্থান', [['বিভিন্ন ধর্মের মানুষ মিলেমিশে থাকলে কী উপকার হয়?'],['বিদ্যালয়ে সম্প্রীতি বজায় রাখতে কী করবে?']]]
+  ]),a:pairedSolutions([
+    ['সম্প্রীতি', [['ধর্মীয় সম্প্রীতি বলতে কী বোঝায়?','নিজ নিজ ধর্ম পালন করে অন্য ধর্মের মানুষের বিশ্বাস ও অধিকারকে সম্মান করাকে ধর্মীয় সম্প্রীতি বলে।'],['অন্য ধর্মের মানুষের প্রতি কেমন আচরণ করবে?','সৌজন্য ও সম্মানের সঙ্গে আচরণ করব, তাদের ধর্মীয় অনুভূতিতে আঘাত করব না।'],['ধর্ম নিয়ে কটূক্তি করা কেন ভুল?','এতে মানুষের মনে কষ্ট হয়, বিদ্বেষ ও অশান্তি তৈরি হয়।']]],
+    ['সহাবস্থান', [['মিলেমিশে থাকলে কী উপকার হয়?','পারস্পরিক বিশ্বাস, সহযোগিতা ও শান্তি বাড়ে; দেশও উন্নতির পথে এগোয়।'],['বিদ্যালয়ে সম্প্রীতি বজায় রাখতে কী করবে?','সব সহপাঠীর সঙ্গে ভদ্র আচরণ করব, তাদের মতকে সম্মান করব এবং কোনো বৈষম্য করব না।']]]
+  ])},
+  {p:68,l:'অধ্যায় ৫ · জীবজগৎ ও প্রকৃতির প্রতি ভালোবাসা',q:'১–৫',type:'অধ্যায়ের প্রশ্নভিত্তিক সমাধান',t:sourceQuestions([
+    ['প্রকৃতির প্রতি ভালোবাসা', [['গাছপালা আমাদের কী কী উপকার করে?'],['প্রাণীর প্রতি দয়া দেখানো কেন প্রয়োজন?'],['পরিবেশ দূষণ রোধে তোমার করণীয় কী?']]],
+    ['দৈনন্দিন করণীয়', [['পাখি বা কোনো প্রাণী আহত হলে কী করবে?'],['পানি ও খাবারের অপচয় রোধে কী করবে?']]]
+  ]),a:pairedSolutions([
+    ['প্রকৃতির প্রতি ভালোবাসা', [['গাছপালা কী উপকার করে?','গাছ অক্সিজেন দেয়, ফল ও কাঠ দেয়, ছায়া দেয়, মাটি রক্ষা করে এবং পরিবেশ সুন্দর রাখে।'],['প্রাণীর প্রতি দয়া দেখানো কেন প্রয়োজন?','প্রাণীও আল্লাহর সৃষ্টি; তাদের প্রতি দয়া দেখানো মানবিক ও ধর্মীয়ভাবে ভালো কাজ।'],['পরিবেশ দূষণ রোধে কী করবে?','নির্দিষ্ট স্থানে ময়লা ফেলব, গাছ লাগাব, জলাশয়ে আবর্জনা ফেলব না এবং প্লাস্টিকের ব্যবহার কমাব।']]],
+    ['দৈনন্দিন করণীয়', [['আহত প্রাণী দেখলে কী করবে?','নিরাপদভাবে বড়দের জানাব, সম্ভব হলে পানি দেব এবং পশুচিকিৎসক বা প্রাণীসেবার সাহায্য নেব।'],['পানি ও খাবারের অপচয় কীভাবে রোধ করবে?','যতটুকু প্রয়োজন ততটুকু ব্যবহার করব, কল খোলা রাখব না এবং খাবার নষ্ট করব না।']]]
+  ])}
+];
+
 const mathSolutions = [
   {p:19,l:'অধ্যায় ১ · সংখ্যা',q:'৪–৫',type:'বহুনির্বাচনি ও স্থানীয় মান',t:sourceQuestions([
     ['৪. সঠিক উত্তরের পাশে টিক (✓) চিহ্ন দিই', [['এক অযুত কত অঙ্ক বিশিষ্ট সংখ্যা হবে?'],['নিচের কোনটি বৃহত্তম সংখ্যা?'],['চিত্রে বাম দিক থেকে গুনলে কালো রঙের বৃত্তটির অবস্থান ক্রমবাচক সংখ্যায় কততম?'],['৫৯৭, ৫৭৯, ৫৭৭, ৫৭৫ সংখ্যাগুলোকে বড়ো থেকে ছোটো ক্রমে সাজালে কোন ক্রমটি সঠিক?'],['৫, ১০, ১৫, ২০, ২৫, ৩০—প্যাটার্নটির নিয়ম কী?'],['৭, ১১, ___, ১৯, ___, ২৭—প্যাটার্নটির খালি ঘরের সংখ্যাগুলো কত?']]],
@@ -476,7 +514,7 @@ function openSupplementReader(id){const book=classThreeBooks.find(x=>x.id===id);
 function openBanglaBook(){if(selectedClass!==3){selectedClass=3;renderClasses();selectClass(3)} const r=document.getElementById('bookRoute');r.innerHTML=`<div class="route-top"><div class="crumb">তৃতীয় শ্রেণি <span>›</span> <b>বাংলা প্রথম পত্র</b></div><button class="backlink" onclick="document.getElementById('bookRoute').classList.remove('show');document.getElementById('bookReader').classList.remove('show');document.getElementById('solutions').classList.remove('show')">× বন্ধ করো</button></div><div class="book-choices"><article class="choice-card"><div class="choice-icon">📕</div><h3>মূল বই</h3><p>পুরো বইটি EducareBD-এর ভেতরেই পড়ুন। পাশের অনুশীলনীতে ক্লিক করলে সরাসরি সমাধানে চলে যাবে।</p><button onclick="openReader()">মূল বই পড়ুন →</button></article><article class="choice-card solution"><div class="choice-icon">💡</div><h3>সমাধান</h3><p>অনুশীলনীর পৃষ্ঠা, প্রশ্ন এবং সহায়ক উত্তর একসঙ্গে দেখুন।</p><button onclick="showSolutions()">সমাধান দেখুন →</button></article></div>`;r.classList.add('show');setTimeout(()=>r.scrollIntoView({behavior:'smooth',block:'nearest'}),40)}
 function openReader(){const reader=document.getElementById('bookReader');const jumps=solutions.map(x=>`<button class="jump-question" onclick="goToSolution(${x.p},'${x.q}','bangla')"><span class="jump-page">পৃষ্ঠা ${bnNum(x.p)} · প্রশ্ন ${x.q}</span>${x.l}</button>`).join('');reader.innerHTML=`<div class="reader-shell"><div class="reader-head"><div><h2>বাংলা প্রথম পত্র — মূল বই</h2><p>বইয়ের পাশে থাকা অনুশীলনীতে ক্লিক করলে সেই প্রশ্নের সমাধান খুলবে।</p></div><a class="reader-newtab" href="${driveLink}" target="_blank" rel="noopener">↗ বড় পর্দায় পড়ুন</a></div><div class="reader-grid"><div class="iframe-shell"><iframe src="${drivePreview}" title="তৃতীয় শ্রেণির বাংলা প্রথম পত্রের পূর্ণ বই" allow="autoplay" loading="lazy">এই ব্রাউজারে বই দেখানো সম্ভব হচ্ছে না।</iframe></div><aside class="exercise-nav"><h3>অনুশীলনী সূচি</h3><p>প্রশ্নে ক্লিক করুন, সরাসরি সমাধানে যান</p><div class="jump-list">${jumps}</div></aside></div></div>`;reader.classList.add('show');setTimeout(()=>reader.scrollIntoView({behavior:'smooth',block:'start'}),40)}
 function showSolutions(book='bangla'){activeSolutionBook=book;activePage='সব';query='';document.getElementById('solutions').classList.add('show');renderSolutions();setTimeout(()=>document.getElementById('solutions').scrollIntoView({behavior:'smooth',block:'start'}),40)}
-function getSolutionData(){return activeSolutionBook==='bangladesh'?bangladeshSolutions:activeSolutionBook==='science'?scienceSolutions:activeSolutionBook==='math'?mathSolutions:solutions}
+function getSolutionData(){return activeSolutionBook==='bangladesh'?bangladeshSolutions:activeSolutionBook==='science'?scienceSolutions:activeSolutionBook==='islam'?islamSolutions:activeSolutionBook==='math'?mathSolutions:solutions}
 function solutionId(x,book=activeSolutionBook){return `solution-${book}-p-${x.p}-q-${encodeURIComponent(x.q)}`}
 function goToSolution(p,q,book='bangla'){activeSolutionBook=book;activePage=Number(p);query='';const box=document.getElementById('solutions');box.classList.add('show');renderSolutions();setTimeout(()=>{const card=document.getElementById(solutionId({p:Number(p),q:q},book));if(card){card.open=true;card.scrollIntoView({behavior:'smooth',block:'start'})}},60)}
 function getPages(){return [...new Set(getSolutionData().map(x=>x.p))]}
@@ -490,14 +528,14 @@ const appSubjects = [
   {id:'bangla',title:'বাংলা প্রথম পত্র',icon:'📕',ready:true},
   {id:'bangladesh',title:'বাংলাদেশ ও বিশ্বপরিচয়',icon:'🌏',ready:true},
   {id:'science',title:'প্রাথমিক বিজ্ঞান',icon:'🔬',ready:true},
-  {id:'islam',title:'ইসলাম শিক্ষা',icon:'☪️',ready:false},
+  {id:'islam',title:'ইসলাম শিক্ষা',icon:'☪️',ready:true},
   {id:'math',title:'প্রাথমিক গণিত',icon:'➗',ready:true},
   {id:'english',title:'English For Today',icon:'🔤',ready:false}
 ];
 let appState={screen:'home',classNo:null,bookId:null};
 let appStack=[];
 function appBook(id){return classThreeBooks.find(x=>x.id===id)}
-function appSet(id){return id==='bangladesh'?bangladeshSolutions:id==='science'?scienceSolutions:id==='math'?mathSolutions:solutions}
+function appSet(id){return id==='bangladesh'?bangladeshSolutions:id==='science'?scienceSolutions:id==='islam'?islamSolutions:id==='math'?mathSolutions:solutions}
 function appBookTitle(id){const b=appBook(id);return b?b.title:'বিষয়'}
 function appQuestionType(x){const t=`${x.l} ${x.t}`;if(x.type)return x.type;if(/বর্ণনামূলক/.test(t))return 'বর্ণনামূলক প্রশ্ন';if(/সংক্ষিপ্ত/.test(t))return 'সংক্ষিপ্ত উত্তর প্রশ্ন';if(/শূন্যস্থান/.test(t))return 'শূন্যস্থান পূরণ';if(/সঠিক উত্তর|টিক চিহ্ন|বহুনির্বাচনি/.test(t))return 'বহুনির্বাচনি প্রশ্ন';if(/মিল/.test(t))return 'মিল করো';if(/চলো, পারি/.test(t))return 'প্রয়োগভিত্তিক প্রশ্ন';return 'অনুশীলনী'}
 function pairedAnswerMarkup(x){if(/class=\"qa-group/.test(x.a))return x.a;return `<div class="qa-group"><h4>প্রশ্ন ${x.q} ও উত্তর</h4><div class="qa-item"><div class="qa-question">প্রশ্ন ${x.q}: ${x.t}</div><div class="qa-answer"><b>উত্তর:</b> ${x.a}</div></div></div>`}
