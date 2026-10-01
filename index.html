@@ -1237,8 +1237,10 @@ Object.assign(banglaExactAnswerOverrides, {
 
 function banglaExactPairs(x){
   const pairs=banglaExactAnswerOverrides[`${x.p}|${x.l}|${x.q}`];
-  if(!pairs)return null;
-  return `<div class="qa-group"><h4>মূল বইয়ের প্রশ্ন ও উত্তর</h4>${pairs.map((pair,i)=>`<div class="qa-item"><div class="qa-question">প্রশ্ন ${i+1}: ${pair[0]}</div><div class="qa-answer"><b>উত্তর:</b> ${pair[1]}</div></div>`).join('')}</div>`;
+  if(pairs)return `<div class="qa-group"><h4>মূল বইয়ের প্রশ্ন ও উত্তর</h4>${pairs.map((pair,i)=>`<div class="qa-item"><div class="qa-question">প্রশ্ন ${i+1}: ${pair[0]}</div><div class="qa-answer"><b>উত্তর:</b> ${pair[1]}</div></div>`).join('')}</div>`;
+  const items=[...String(x.a).matchAll(/<li>([\s\S]*?)<\/li>/g)].map(m=>m[1]);
+  const answers=items.length?items:[x.a];
+  return `<div class="qa-group"><h4>প্রশ্ন ও উত্তর</h4>${answers.map((answer,i)=>`<div class="qa-item"><div class="qa-question">প্রশ্ন ${i+1}: ${x.t}</div><div class="qa-answer"><b>উত্তর:</b> ${answer}</div></div>`).join('')}</div>`;
 }
 function pairedAnswerMarkup(x,bookId=activeSolutionBook){if(bookId==='bangladesh')return bangladeshExactPairs(x);if(bookId==='bangla'){const exact=banglaExactPairs(x);if(exact)return exact}if(/class=\"qa-group/.test(x.a))return x.a;return `<div class="qa-group"><h4>প্রশ্ন ${x.q} ও উত্তর</h4><div class="qa-item"><div class="qa-question">প্রশ্ন ${x.q}: ${x.t}</div><div class="qa-answer"><b>উত্তর:</b> ${x.a}</div></div></div>`}
 function appGo(screen,change={}){appStack.push({...appState});appState={...appState,...change,screen};renderSchoolApp()}
