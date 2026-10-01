@@ -1001,7 +1001,55 @@ function appBook(id){return classThreeBooks.find(x=>x.id===id)}
 function appSet(id){return id==='bangladesh'?bangladeshSolutions:id==='science'?scienceSolutions:id==='islam'?islamSolutions:id==='english'?englishSolutions:id==='math'?mathSolutions:solutions}
 function appBookTitle(id){const b=appBook(id);return b?b.title:'বিষয়'}
 function appQuestionType(x){const t=`${x.l} ${x.t}`;if(x.type)return x.type;if(/বর্ণনামূলক/.test(t))return 'বর্ণনামূলক প্রশ্ন';if(/সংক্ষিপ্ত/.test(t))return 'সংক্ষিপ্ত উত্তর প্রশ্ন';if(/শূন্যস্থান/.test(t))return 'শূন্যস্থান পূরণ';if(/সঠিক উত্তর|টিক চিহ্ন|বহুনির্বাচনি/.test(t))return 'বহুনির্বাচনি প্রশ্ন';if(/মিল/.test(t))return 'মিল করো';if(/চলো, পারি/.test(t))return 'প্রয়োগভিত্তিক প্রশ্ন';return 'অনুশীলনী'}
-function pairedAnswerMarkup(x,bookId=activeSolutionBook){if(bookId==='bangladesh')return bangladeshExactPairs(x);if(/class=\"qa-group/.test(x.a))return x.a;return `<div class="qa-group"><h4>প্রশ্ন ${x.q} ও উত্তর</h4><div class="qa-item"><div class="qa-question">প্রশ্ন ${x.q}: ${x.t}</div><div class="qa-answer"><b>উত্তর:</b> ${x.a}</div></div></div>`}
+const banglaExactAnswerOverrides = {
+  '2|আমাদের কথা|১': [
+    ['(ক) আমি .............................. শ্রেণিতে পড়ি।', 'আমি <b>তৃতীয়</b> শ্রেণিতে পড়ি।'],
+    ['(খ) আমার অনেক .............................. আছে।', 'আমার অনেক <b>বন্ধু</b> আছে।'],
+    ['(গ) বই পড়তে .............................. লাগে।', 'বই পড়তে <b>ভালো</b> লাগে।'],
+    ['(ঘ) .............................. কেমন আছো?', '<b>তুমি</b> কেমন আছো?'],
+    ['(ঙ) তোমাকে .............................. জানাই।', 'তোমাকে <b>ধন্যবাদ</b> জানাই।']
+  ],
+  '5|আমাদের পরিবার ও আমাদের প্রতিবেশী|১': [
+    ['পঞ্চম, ফসল, খামার, প্রতিবেশী, নার্স ও পেশা—শব্দগুলো পাঠ থেকে খুঁজে বের করি।', 'পাঠে পাওয়া শব্দগুলো হলো—<b>পঞ্চম, ফসল, খামার, প্রতিবেশী, নার্স ও পেশা</b>।']
+  ],
+  '5|আমাদের পরিবার ও আমাদের প্রতিবেশী|২': [
+    ['(ক) দুই বছর পর আমি .............................. শ্রেণিতে উঠব।', 'দুই বছর পর আমি <b>পঞ্চম</b> শ্রেণিতে উঠব।'],
+    ['(খ) তার গরুর .............................. আছে।', 'তার গরুর <b>খামার</b> আছে।'],
+    ['(গ) কৃষক মাঠে .............................. ফলান।', 'কৃষক মাঠে <b>ফসল</b> ফলান।'],
+    ['(ঘ) আমার বাবার .............................. কৃষি।', 'আমার বাবার <b>পেশা</b> কৃষি।'],
+    ['(ঙ) আমরা সবাই .............................. থাকি।', 'আমরা সবাই <b>মিলেমিশে</b> থাকি।']
+  ],
+  '5|আমাদের পরিবার ও আমাদের প্রতিবেশী|৩': [
+    ['(ক) রাজুর বাবা কী করেন?', 'রাজুর বাবা একজন কৃষক; তিনি কৃষিকাজ করেন এবং মাঠে নানা রকম ফসল ফলান।'],
+    ['(খ) হাঁস-মুরগির খামার কে দেখাশোনা করেন?', 'রাজুর মা হাঁস-মুরগির খামার দেখাশোনা করেন।'],
+    ['(গ) মিতুর মা কোথায় কাজ করেন?', 'মিতুর মা হাসপাতালে নার্স হিসেবে কাজ করেন।'],
+    ['(ঘ) তিনটি পেশার নাম লেখো।', 'তিনটি পেশার নাম হলো—কৃষক, নার্স ও শিক্ষক।']
+  ],
+  '5|আমাদের পরিবার ও আমাদের প্রতিবেশী|৪': [
+    ['আমি বড়ো হয়ে কী হতে চাই তা বলি।', '<b>নমুনা উত্তর:</b> আমি বড়ো হয়ে একজন শিক্ষক হতে চাই। আমি শিশুদের যত্ন নিয়ে পড়াব।']
+  ],
+  '11|ময়লার বাক্স|১': [
+    ['যেখানে-সেখানে থুথু—বাক্যটি সম্পূর্ণ করো।', 'যেখানে-সেখানে থুথু <b>ফেলব না</b>।'],
+    ['রাস্তার একপাশ দিয়ে—বাক্যটি সম্পূর্ণ করো।', 'রাস্তার একপাশ দিয়ে <b>হাঁটব</b>।'],
+    ['বেঞ্চে বা টেবিলে—বাক্যটি সম্পূর্ণ করো।', 'বেঞ্চে বা টেবিলে <b>লিখব না</b>।'],
+    ['পেনসিল কাটার ময়লা—বাক্যটি সম্পূর্ণ করো।', 'পেনসিল কাটার ময়লা <b>ঝুড়িতে ফেলব</b>।'],
+    ['ফল ধুয়ে—বাক্যটি সম্পূর্ণ করো।', 'ফল ধুয়ে <b>খাব</b>।']
+  ],
+  '14|কারচিহ্ন|১': [
+    ['সাখো—বর্ণ সাজিয়ে শব্দ লিখি।', '<b>খোসা</b>।'],
+    ['নিসজি—বর্ণ সাজিয়ে শব্দ লিখি।', '<b>জিনিস</b>।'],
+    ['টলেকচ—বর্ণ সাজিয়ে শব্দ লিখি।', '<b>চকলেট</b>।'],
+    ['আমকীল—বর্ণ সাজিয়ে শব্দ লিখি।', '<b>মালিক</b>।'],
+    ['রজামন—বর্ণ সাজিয়ে শব্দ লিখি।', '<b>নামাজ</b>।'],
+    ['থিবীপৃ—বর্ণ সাজিয়ে শব্দ লিখি।', '<b>পৃথিবী</b>।']
+  ]
+};
+function banglaExactPairs(x){
+  const pairs=banglaExactAnswerOverrides[`${x.p}|${x.l}|${x.q}`];
+  if(!pairs)return null;
+  return `<div class="qa-group"><h4>মূল বইয়ের প্রশ্ন ও উত্তর</h4>${pairs.map((pair,i)=>`<div class="qa-item"><div class="qa-question">প্রশ্ন ${i+1}: ${pair[0]}</div><div class="qa-answer"><b>উত্তর:</b> ${pair[1]}</div></div>`).join('')}</div>`;
+}
+function pairedAnswerMarkup(x,bookId=activeSolutionBook){if(bookId==='bangladesh')return bangladeshExactPairs(x);if(bookId==='bangla'){const exact=banglaExactPairs(x);if(exact)return exact}if(/class=\"qa-group/.test(x.a))return x.a;return `<div class="qa-group"><h4>প্রশ্ন ${x.q} ও উত্তর</h4><div class="qa-item"><div class="qa-question">প্রশ্ন ${x.q}: ${x.t}</div><div class="qa-answer"><b>উত্তর:</b> ${x.a}</div></div></div>`}
 function appGo(screen,change={}){appStack.push({...appState});appState={...appState,...change,screen};renderSchoolApp()}
 function appBack(){appState=appStack.pop()||{screen:'home',classNo:null,bookId:null};renderSchoolApp()}
 function appHome(){appStack=[];appState={screen:'home',classNo:null,bookId:null};renderSchoolApp()}
