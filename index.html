@@ -1398,6 +1398,42 @@ Object.assign(englishExactAnswerOverrides, {
  ]
 });
 
+Object.assign(englishExactAnswerOverrides, {
+ '48|Unit 4 · Lesson 1: Say the middle sounds /æ/ and /e/': [
+  ['A–C. Say the /æ/ sound in bag, mat, hat and cat.', 'The /æ/ words are <b>bag, mat, hat and cat</b>.'],
+  ['D–F. Say the /e/ sound in pen, hen, red and net.', 'The /e/ words are <b>pen, hen, red and net</b>.'],
+  ['G. Write S for same middle sound and D for different middle sound: pen/pan, man/men, bag/mat, pen/ten and bed/cat.', '<b>D, D, S, S, D</b>.'],
+  ['Let’s practise 1–3. Say, circle and underline words with /æ/ and /e/ sounds.', '/æ/: <b>can, man, happy, bad, cat, pan, hat and cap</b>. /e/: <b>den, bed, pet, leg, pen, ten, red and hen</b>.']
+ ],
+ '52|Unit 4 · Lesson 2: Say the middle sounds /ɪ/ and /iː/': [
+  ['A–E. Say the /ɪ/ sound in tin, pin, hill and pill, and the /iː/ sound in bean, sleep, sheep and feed.', '/ɪ/: <b>tin, pin, hill and pill</b>. /iː/: <b>bean, sleep, sheep and feed</b>.'],
+  ['F–G. Write S for same sound and D for different sound: slip/sleep, still/steel, bean/bin, ship/sheep, hit/heat and bin/fin.', '<b>D, D, D, D, D, S</b>.'],
+  ['Let’s practise. Circle /ɪ/ words and underline /iː/ words.', 'Circle /ɪ/: <b>nil, fill, tin, ship and slip</b>. Underline /iː/: <b>feed, sheep and bean</b>.']
+ ],
+ '54|Unit 4 · Lesson 3: Rhyme: Row, Row, Row Your Boat': [
+  ['A. Match the pictures with the names Polar bear, Lion and Crocodile.', 'The animals are <b>polar bear, lion and crocodile</b>.'],
+  ['B–C. Clap three times when you hear an animal’s name and read the rhyme aloud.', 'Clap three times when you hear <b>crocodile, polar bear or lion</b>.'],
+  ['D. Share a similar rhyme from your own language with the class.', '<b>Model response:</b> Share a rhyme about a boat or a river that you know.']
+ ],
+ '56|Unit 4 · Lesson 4: Say the middle sounds /ɑː/ and /ʌ/': [
+  ['A–E. Say the /ɑː/ sound in cart, heart, bard and card, and the /ʌ/ sound in cut, hut, bud and hush.', '/ɑː/: <b>cart, heart, bard and card</b>. /ʌ/: <b>cut, hut, bud and hush</b>.'],
+  ['F. Write S for same sound and D for different sound: heart/hut, bud/bun, cut/cart, mug/jug, bard/bud and barn/bun.', '<b>D, S, D, S, D, D</b>.'],
+  ['G. Listen, write and say the words.', '<b>hut, cart, jug, bard, tub, heart and nut</b>.'],
+  ['Let’s practise. Clap for the /ɑː/ and /ʌ/ sounds.', '/ɑː/: <b>start, part, far, mart and cart</b>. /ʌ/: <b>nut, cut and shut</b>.']
+ ],
+ '59|Unit 4 · Lesson 5: Numbers 91–100': [
+  ['A–C. Count, read and make the numbers from 91 to 100 using cards.', '91 <b>ninety-one</b>; 92 ninety-two; 93 ninety-three; 94 ninety-four; 95 ninety-five; 96 ninety-six; 97 ninety-seven; 98 ninety-eight; 99 ninety-nine; 100 one hundred.'],
+  ['D. Write and say the numbers from 81 to 100.', 'Write the sequence from <b>81</b> to <b>100</b> in order.'],
+  ['E–F. Say the number pairs 13/30 to 19/90. Say and write the numbers from 1 to 100.', '13 <b>thirteen</b>, 30 <b>thirty</b>; 14 fourteen, 40 forty; 15 fifteen, 50 fifty; 16 sixteen, 60 sixty; 17 seventeen, 70 seventy; 18 eighteen, 80 eighty; 19 nineteen, 90 ninety.']
+ ],
+ '61|Unit 4 · Lesson 6: Ordinal numbers': [
+  ['A–B. Read and say the names of the twelve months in order.', 'January, February, March, April, May, June, July, August, September, October, November and December.'],
+  ['C. Write the ordinal numbers from 1st to 10th and say the ordinals of the months.', '1st first, 2nd second, 3rd third, 4th fourth, 5th fifth, 6th sixth, 7th seventh, 8th eighth, 9th ninth and 10th tenth.'],
+  ['D–E. Put names on the bookshelf using ordinal numbers and make a home library project.', 'Use <b>1st, 2nd, 3rd</b> and so on for shelf numbers. Your home library can have light, a sitting place and numbered shelves.'],
+  ['Let’s practise 1–3. Complete month names, short forms and ordinal words.', 'Months: <b>January, February, March, April, May, June, July, August, September and October</b>. Short forms: Second <b>2nd</b>, third <b>3rd</b>, Eighth <b>8th</b>. January <b>first</b>, March <b>third</b>, April <b>fourth</b>, July <b>seventh</b> and September <b>ninth</b>.']
+ ]
+});
+
 function englishExactPairs(x){
   const pairs=englishExactAnswerOverrides[`${x.p}|${x.l}`];
   if(!pairs)return null;
