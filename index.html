@@ -1242,7 +1242,21 @@ function banglaExactPairs(x){
   const answers=items.length?items:[x.a];
   return `<div class="qa-group"><h4>প্রশ্ন ও উত্তর</h4>${answers.map((answer,i)=>`<div class="qa-item"><div class="qa-question">প্রশ্ন ${i+1}: ${x.t}</div><div class="qa-answer"><b>উত্তর:</b> ${answer}</div></div>`).join('')}</div>`;
 }
-function pairedAnswerMarkup(x,bookId=activeSolutionBook){if(bookId==='bangladesh')return bangladeshExactPairs(x);if(bookId==='bangla'){const exact=banglaExactPairs(x);if(exact)return exact}if(/class=\"qa-group/.test(x.a))return x.a;return `<div class="qa-group"><h4>প্রশ্ন ${x.q} ও উত্তর</h4><div class="qa-item"><div class="qa-question">প্রশ্ন ${x.q}: ${x.t}</div><div class="qa-answer"><b>উত্তর:</b> ${x.a}</div></div></div>`}
+const englishExactAnswerOverrides = {
+  '1|Unit 1 · Lesson 1: Hello': [
+    ['A. Listen and say.', 'Fatiha: <b>Good morning. What’s your name?</b><br>Sanjoy: <b>Good morning. My name’s Sanjoy.</b><br>Fatiha: <b>How are you?</b><br>Sanjoy: <b>I’m good, thanks. And you?</b><br>Fatiha: <b>I’m also good.</b>'],
+    ['B. Listen and say.', 'Rahat: <b>Hello, Faria. How are you?</b><br>Faria: <b>Hi, Rahat. I’m fine. Thank you.</b>'],
+    ['C. Pairwork: Act out the dialogue in activity B with your friend.', '<b>Model pairwork:</b> One learner says, “Hello, Faria. How are you?” The other learner replies, “Hi, Rahat. I’m fine. Thank you.” Then swap roles.'],
+    ['1(a). Look at activity A. Write the correct word in the box. Rana: “Good morning. What’s your name?” Sima: “_______________, My name’s ___________.”', 'Sima: <b>Good morning. My name’s Sima.</b>'],
+    ['1(b). Look at activity A. Write the correct word in the box. Sarah: “_______________, What’s your name?” Manik: “________________, My name’s ________.”', 'Sarah: <b>Good morning. What’s your name?</b><br>Manik: <b>Good morning. My name’s Manik.</b>']
+  ]
+};
+function englishExactPairs(x){
+  const pairs=englishExactAnswerOverrides[`${x.p}|${x.l}`];
+  if(!pairs)return null;
+  return `<div class="qa-group"><h4>Original textbook question and smart answer</h4>${pairs.map((pair,i)=>`<div class="qa-item"><div class="qa-question">Question ${i+1}: ${pair[0]}</div><div class="qa-answer"><b>Answer:</b> ${pair[1]}</div></div>`).join('')}</div>`;
+}
+function pairedAnswerMarkup(x,bookId=activeSolutionBook){if(bookId==='bangladesh')return bangladeshExactPairs(x);if(bookId==='bangla'){const exact=banglaExactPairs(x);if(exact)return exact}if(bookId==='english'){const exact=englishExactPairs(x);if(exact)return exact}if(/class=\"qa-group/.test(x.a))return x.a;return `<div class="qa-group"><h4>প্রশ্ন ${x.q} ও উত্তর</h4><div class="qa-item"><div class="qa-question">প্রশ্ন ${x.q}: ${x.t}</div><div class="qa-answer"><b>উত্তর:</b> ${x.a}</div></div></div>`}
 function appGo(screen,change={}){appStack.push({...appState});appState={...appState,...change,screen};renderSchoolApp()}
 function appBack(){appState=appStack.pop()||{screen:'home',classNo:null,bookId:null};renderSchoolApp()}
 function appHome(){appStack=[];appState={screen:'home',classNo:null,bookId:null};renderSchoolApp()}
