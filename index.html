@@ -1251,6 +1251,19 @@ const englishExactAnswerOverrides = {
     ['1(b). Look at activity A. Write the correct word in the box. Sarah: “_______________, What’s your name?” Manik: “________________, My name’s ________.”', 'Sarah: <b>Good morning. What’s your name?</b><br>Manik: <b>Good morning. My name’s Manik.</b>']
   ]
 };
+Object.assign(englishExactAnswerOverrides, {
+  '3|Unit 1 · Lesson 2: Talking about myself': [
+    ['A. Chain drill. S1: “Alex is my name. Football is my game. Red is my colour. Rose is my flower.” S2: “(Name) is my name. _____ is my game. _____ is my colour. _____ is my flower.”', '<b>Model answer:</b> Rima is my name. Football is my game. Red is my colour. Rose is my flower.'],
+    ['B. Listen and say.', 'Sakiba: <b>Hello, Zahid. What’s your favourite game?</b><br>Zahid: <b>Hi, Sakiba! Cricket is my favourite game. And yours?</b><br>Sakiba: <b>I like to play football.</b><br>Zahid: <b>What’s your favourite subject, Sakiba?</b><br>Sakiba: <b>English is my favourite subject.</b><br>Zahid: <b>Oh, I like English, too.</b>'],
+    ['C. Act out the dialogue in activity B with your friend.', '<b>Model pairwork:</b> One learner plays Sakiba and the other plays Zahid. Read the dialogue in Activity B, then swap roles.'],
+    ['1. Here “favourite” means— a) most liked b) disliked.', 'Here “favourite” means <b>most liked</b>.'],
+    ['2. Here “game” means— a) sport b) reading book.', 'Here “game” means <b>sport</b>.'],
+    ['3(a). What is Zahid’s favourite game?', 'Zahid’s favourite game is <b>cricket</b>.'],
+    ['3(b). What is Sakiba’s favourite subject?', 'Sakiba’s favourite subject is <b>English</b>.'],
+    ['3(c). What do Zahid and Sakiba talk about?', 'Zahid and Sakiba talk about their <b>favourite game and favourite subject</b>.']
+  ]
+});
+
 function englishExactPairs(x){
   const pairs=englishExactAnswerOverrides[`${x.p}|${x.l}`];
   if(!pairs)return null;
