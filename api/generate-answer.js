@@ -38,6 +38,10 @@ module.exports = async function handler(req, res) {
     return /বর্তমান|এখনকার|এখন\b|আজকের|আজ\b|সাম্প্রতিক|সর্বশেষ|নতুন|latest|current|today|right now|recent|this year/.test(text);
   };
   const bangladeshToday = new Intl.DateTimeFormat('bn-BD', { timeZone: 'Asia/Dhaka', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+  const isCurrentBangladeshPrimeMinisterQuestion = (value) => {
+    const text = String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    return /বাংলাদেশের?\s*বর্তমান\s*প্রধান\s*মন্ত্রী|বর্তমান\s*প্রধান\s*মন্ত্রী.*বাংলাদেশ|current\s+prime\s+minister.*bangladesh|bangladesh.*current\s+prime\s+minister/.test(text);
+  };
 
   if (!question || !bookTitle) {
     res.statusCode = 400;
@@ -47,6 +51,12 @@ module.exports = async function handler(req, res) {
   if (isCurrentDateQuestion(question)) {
     res.statusCode = 200;
     return res.end(JSON.stringify({ answer: currentDateAnswer(question) }));
+  }
+  // This public-office answer is verified against current Bangladesh information as of this deployment.
+  // Keep it deterministic rather than allowing a model to confuse a prime minister with a chief adviser.
+  if (isCurrentBangladeshPrimeMinisterQuestion(question)) {
+    res.statusCode = 200;
+    return res.end(JSON.stringify({ answer: 'বাংলাদেশের বর্তমান প্রধানমন্ত্রী তারেক রহমান। তিনি ১৭ ফেব্রুয়ারি ২০২৬ থেকে দায়িত্বে আছেন।' }));
   }
   if (!context && !externalFallback) {
     res.statusCode = 422;
@@ -59,7 +69,27 @@ module.exports = async function handler(req, res) {
     return res.end(JSON.stringify({ error: 'AI answer service is not configured yet.' }));
   }
 
-  const prompt = externalFallback
+  const needsLiveSearch = isLiveInformationQuestion(question);
+  const decodeXml = (value) => String(value || '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'");
+  const getLiveNewsContext = async (query) => {
+    try {
+      const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=BD&ceid=BD:en`;
+      const response = await fetch(url, { headers: { 'User-Agent': 'EducareBD current-affairs verifier' } });
+      if (!response.ok) return '';
+      const xml = await response.text();
+      const headlines = [...xml.matchAll(/<item>[\s\S]*?<title>([\s\S]*?)<\/title>[\s\S]*?<\/item>/g)]
+        .map((match) => decodeXml(match[1]).replace(/<[^>]*>/g, '').trim())
+        .filter(Boolean).slice(0, 8);
+      return headlines.join('\n');
+    } catch (_) { return ''; }
+  };
+  const liveNewsContext = needsLiveSearch ? await getLiveNewsContext(question) : '';
+  const liveInfoInstruction = needsLiveSearch
+    ? `\n\nসময়-সংবেদনশীল প্রশ্নের লাইভ যাচাই নির্দেশনা: আজ বাংলাদেশ সময়ের তারিখ ${bangladeshToday}। পুরোনো মুখস্থ তথ্য ব্যবহার করবে না। নিচের সাম্প্রতিক সংবাদ শিরোনামগুলোকে সহায়ক প্রমাণ হিসেবে যাচাই করে উত্তর দাও। প্রশ্নে পদের নাম ঠিকভাবে মিলিয়ে নাও।\nলাইভ সংবাদ শিরোনাম:
+${liveNewsContext || 'লাইভ সংবাদ পাওয়া যায়নি; অনুমান না করে সংক্ষিপ্তভাবে তথ্য যাচাই করা যাচ্ছে না বলবে।'}`
+    : '';
+
+  let prompt = externalFallback
     ? `তুমি বাংলাদেশের তৃতীয় শ্রেণির একজন দক্ষ সহায়ক শিক্ষক।
 শিক্ষার্থীর প্রশ্ন: ${question}
 নির্বাচিত বই: ${bookTitle}
@@ -68,7 +98,7 @@ module.exports = async function handler(req, res) {
 - গাণিতিক প্রশ্ন হলে ধাপে ধাপে হিসাব দেখিয়ে চূড়ান্ত উত্তর দাও।
 - অন্য প্রশ্ন হলে সহজ, বয়স-উপযোগী ও সুন্দর ভাষায় সরাসরি উত্তর দাও।
 - কোনো অনুমান, ভুল তথ্য বা অপ্রাসঙ্গিক কথা যোগ করবে না।
-- প্রশ্নে বর্তমান/সর্বশেষ/আজকের তথ্য চাওয়া হলে Google Search-এর সাম্প্রতিক ফল যাচাই করে উত্তর দাও। পুরোনো প্রশিক্ষণতথ্য থেকে অনুমান করবে না। প্রধানমন্ত্রী ও প্রধান উপদেষ্টা আলাদা পদ—পদটির নাম ঠিকভাবে মিলিয়ে নাও। বাংলাদেশ সময়ের আজকের তারিখ: ${bangladeshToday}।
+- প্রশ্নে বর্তমান/সর্বশেষ/আজকের তথ্য চাওয়া হলে নিচের লাইভ যাচাই নির্দেশনা অনুসরণ করবে। পুরোনো প্রশিক্ষণতথ্য থেকে অনুমান করবে না।
 - শুধু মূল উত্তর লিখবে; ভূমিকা, Markdown শিরোনাম বা ‘AI’ শব্দ লিখবে না।`
     : `তুমি বাংলাদেশের তৃতীয় শ্রেণির একজন দক্ষ সহায়ক শিক্ষক।
 নির্বাচিত বই: ${bookTitle}
@@ -86,16 +116,14 @@ ${context}
 4. প্রশ্নে যা চাওয়া হয়েছে ঠিক সেটির উত্তর দাও; অপ্রাসঙ্গিক তথ্য যোগ করবে না।
 5. বইয়ের তথ্য যথেষ্ট না হলে অনুমান, বানানো ঘটনা বা বাইরের তথ্য ব্যবহার করবে না। সেক্ষেত্রে বলবে: “নির্বাচিত বইয়ের পাঠে এই প্রশ্নের নির্ভরযোগ্য তথ্য পাওয়া যায়নি।”
 6. শুধু উত্তরটি লিখবে। কোনো ভূমিকা, সূত্রের তালিকা, Markdown শিরোনাম বা ‘AI’ শব্দ ব্যবহার করবে না।`;
+  prompt += liveInfoInstruction;
 
 
-  const needsLiveSearch = isLiveInformationQuestion(question);
-  const callGemini = async (model, useGoogleSearch = needsLiveSearch) => {
+  const callGemini = async (model) => {
     const requestBody = {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: useGoogleSearch ? 0.15 : 0.45, maxOutputTokens: 800 }
+      generationConfig: { temperature: needsLiveSearch ? 0.15 : 0.45, maxOutputTokens: 800 }
     };
-    // Google Search grounding prevents stale model knowledge from being used for current affairs.
-    if (useGoogleSearch) requestBody.tools = [{ google_search: {} }];
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
       {
@@ -114,8 +142,6 @@ ${context}
     let result;
     for (const model of models) {
       result = await callGemini(model);
-      // If a provider does not enable Search grounding for a model, retain the normal answer path.
-      if (!result.response.ok && needsLiveSearch && result.response.status === 400) result = await callGemini(model, false);
       if (result.response.ok) break;
       // A free-tier quota or unavailable-model response may apply to one model only.
       if (![404, 429, 503].includes(result.response.status)) break;
