@@ -1,4 +1,4 @@
-const CACHE_NAME = 'porashona-shell-v11';
+const CACHE_NAME = 'porashona-shell-v12';
 const APP_SHELL = ['/', '/manifest.webmanifest', '/app-icon-192.png', '/app-icon-512.png'];
 
 self.addEventListener('install', (event) => {
