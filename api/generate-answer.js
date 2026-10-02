@@ -16,12 +16,13 @@ module.exports = async function handler(req, res) {
   const question = String(body.question || '').trim().slice(0, 1200);
   const bookTitle = String(body.bookTitle || '').trim().slice(0, 200);
   const context = String(body.context || '').trim().slice(0, 120000);
+  const externalFallback = body.externalFallback === true;
 
   if (!question || !bookTitle) {
     res.statusCode = 400;
     return res.end(JSON.stringify({ error: 'Question and selected book are required.' }));
   }
-  if (!context) {
+  if (!context && !externalFallback) {
     res.statusCode = 422;
     return res.end(JSON.stringify({ error: 'No relevant source context was found in the selected book.' }));
   }
@@ -32,7 +33,17 @@ module.exports = async function handler(req, res) {
     return res.end(JSON.stringify({ error: 'AI answer service is not configured yet.' }));
   }
 
-  const prompt = `তুমি বাংলাদেশের তৃতীয় শ্রেণির একজন দক্ষ সহায়ক শিক্ষক।
+  const prompt = externalFallback
+    ? `তুমি বাংলাদেশের তৃতীয় শ্রেণির একজন দক্ষ সহায়ক শিক্ষক।
+শিক্ষার্থীর প্রশ্ন: ${question}
+নির্বাচিত বই: ${bookTitle}
+
+নির্বাচিত বইয়ে এই প্রশ্নের প্রাসঙ্গিক তথ্য পাওয়া যায়নি। তাই সাধারণ জ্ঞান ও সঠিক নিয়ম ব্যবহার করে প্রশ্নটির নির্ভুল উত্তর দাও।
+- গাণিতিক প্রশ্ন হলে ধাপে ধাপে হিসাব দেখিয়ে চূড়ান্ত উত্তর দাও।
+- অন্য প্রশ্ন হলে সহজ, বয়স-উপযোগী ও সুন্দর ভাষায় সরাসরি উত্তর দাও।
+- কোনো অনুমান, ভুল তথ্য বা অপ্রাসঙ্গিক কথা যোগ করবে না।
+- শুধু মূল উত্তর লিখবে; ভূমিকা, Markdown শিরোনাম বা ‘AI’ শব্দ লিখবে না।`
+    : `তুমি বাংলাদেশের তৃতীয় শ্রেণির একজন দক্ষ সহায়ক শিক্ষক।
 নির্বাচিত বই: ${bookTitle}
 শিক্ষার্থীর প্রশ্ন: ${question}
 
