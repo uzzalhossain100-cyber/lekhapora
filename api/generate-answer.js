@@ -74,7 +74,7 @@ ${context}
       result = await callGemini(model);
       if (result.response.ok) break;
       // A free-tier quota or unavailable-model response may apply to one model only.
-      if (![404, 429].includes(result.response.status)) break;
+      if (![404, 429, 503].includes(result.response.status)) break;
     }
     if (!result.response.ok) {
       const message = result.response.status === 429 ? 'Gemini AI এখন ব্যস্ত আছে। এক মিনিট পরে আবার চেষ্টা করুন।' : (result.data?.error?.message || 'Gemini could not create an answer.');
