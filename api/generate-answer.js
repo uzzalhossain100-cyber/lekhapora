@@ -67,12 +67,17 @@ ${context}
   };
 
   try {
-    let result = await callGemini(process.env.GEMINI_MODEL || 'gemini-2.5-flash');
-    if (!result.response.ok && !process.env.GEMINI_MODEL && result.response.status === 404) {
-      result = await callGemini('gemini-2.0-flash');
+    const configuredModel = process.env.GEMINI_MODEL;
+    const models = configuredModel ? [configuredModel] : ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    let result;
+    for (const model of models) {
+      result = await callGemini(model);
+      if (result.response.ok) break;
+      // A free-tier quota or unavailable-model response may apply to one model only.
+      if (![404, 429].includes(result.response.status)) break;
     }
     if (!result.response.ok) {
-      const message = result.data?.error?.message || 'Gemini could not create an answer.';
+      const message = result.response.status === 429 ? 'Gemini AI এখন ব্যস্ত আছে। এক মিনিট পরে আবার চেষ্টা করুন।' : (result.data?.error?.message || 'Gemini could not create an answer.');
       res.statusCode = 502;
       return res.end(JSON.stringify({ error: message }));
     }
