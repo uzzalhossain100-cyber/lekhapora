@@ -44,6 +44,9 @@ module.exports = async function handler(req, res) {
   };
   const selectedBookVerifiedAnswer = (selectedBook, value) => {
     const text = String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    if (selectedBook === 'বাংলা প্রথম পত্র' && text.includes('খলসে') && text.includes('হাস')) {
+      return 'খলসে মাছের হাসি দেখে পাতিহাঁস হাসে।';
+    }
     if (selectedBook === 'বাংলা প্রথম পত্র' && text.includes('হাসি') && /(লেখক|কবি|রচয়িতা|রচনা করেছেন|কার লেখা)/.test(text)) {
       return '‘হাসি’ কবিতার রচয়িতা রোকনুজ্জামান খান।';
     }
