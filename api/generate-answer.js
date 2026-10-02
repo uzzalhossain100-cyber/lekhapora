@@ -33,6 +33,11 @@ module.exports = async function handler(req, res) {
       ? `Today is ${get('weekday')}, ${get('day')} ${get('month')} ${get('year')}.`
       : `আজ ${get('day')} ${get('month')} ${get('year')}, ${get('weekday')}।`;
   };
+  const isLiveInformationQuestion = (value) => {
+    const text = String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    return /বর্তমান|এখনকার|এখন\b|আজকের|আজ\b|সাম্প্রতিক|সর্বশেষ|নতুন|latest|current|today|right now|recent|this year/.test(text);
+  };
+  const bangladeshToday = new Intl.DateTimeFormat('bn-BD', { timeZone: 'Asia/Dhaka', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
 
   if (!question || !bookTitle) {
     res.statusCode = 400;
@@ -63,6 +68,7 @@ module.exports = async function handler(req, res) {
 - গাণিতিক প্রশ্ন হলে ধাপে ধাপে হিসাব দেখিয়ে চূড়ান্ত উত্তর দাও।
 - অন্য প্রশ্ন হলে সহজ, বয়স-উপযোগী ও সুন্দর ভাষায় সরাসরি উত্তর দাও।
 - কোনো অনুমান, ভুল তথ্য বা অপ্রাসঙ্গিক কথা যোগ করবে না।
+- প্রশ্নে বর্তমান/সর্বশেষ/আজকের তথ্য চাওয়া হলে Google Search-এর সাম্প্রতিক ফল যাচাই করে উত্তর দাও। পুরোনো প্রশিক্ষণতথ্য থেকে অনুমান করবে না। প্রধানমন্ত্রী ও প্রধান উপদেষ্টা আলাদা পদ—পদটির নাম ঠিকভাবে মিলিয়ে নাও। বাংলাদেশ সময়ের আজকের তারিখ: ${bangladeshToday}।
 - শুধু মূল উত্তর লিখবে; ভূমিকা, Markdown শিরোনাম বা ‘AI’ শব্দ লিখবে না।`
     : `তুমি বাংলাদেশের তৃতীয় শ্রেণির একজন দক্ষ সহায়ক শিক্ষক।
 নির্বাচিত বই: ${bookTitle}
@@ -82,16 +88,20 @@ ${context}
 6. শুধু উত্তরটি লিখবে। কোনো ভূমিকা, সূত্রের তালিকা, Markdown শিরোনাম বা ‘AI’ শব্দ ব্যবহার করবে না।`;
 
 
-  const callGemini = async (model) => {
+  const needsLiveSearch = isLiveInformationQuestion(question);
+  const callGemini = async (model, useGoogleSearch = needsLiveSearch) => {
+    const requestBody = {
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: useGoogleSearch ? 0.15 : 0.45, maxOutputTokens: 800 }
+    };
+    // Google Search grounding prevents stale model knowledge from being used for current affairs.
+    if (useGoogleSearch) requestBody.tools = [{ google_search: {} }];
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.45, maxOutputTokens: 800 }
-        })
+        body: JSON.stringify(requestBody)
       }
     );
     const data = await response.json().catch(() => ({}));
@@ -104,6 +114,8 @@ ${context}
     let result;
     for (const model of models) {
       result = await callGemini(model);
+      // If a provider does not enable Search grounding for a model, retain the normal answer path.
+      if (!result.response.ok && needsLiveSearch && result.response.status === 400) result = await callGemini(model, false);
       if (result.response.ok) break;
       // A free-tier quota or unavailable-model response may apply to one model only.
       if (![404, 429, 503].includes(result.response.status)) break;
