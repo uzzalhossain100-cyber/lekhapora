@@ -18,9 +18,30 @@ module.exports = async function handler(req, res) {
   const context = String(body.context || '').trim().slice(0, 120000);
   const externalFallback = body.externalFallback === true;
 
+  const isCurrentDateQuestion = (value) => {
+    const text = String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const bangla = /আজকের?\s*(?:তারিখ|দিন|বার)|আজ\s*(?:কত|কি)\s*(?:তারিখ|দিন|বার)|বর্তমান\s*(?:তারিখ|দিন|বার)/.test(text);
+    const english = /(?:what(?:'s| is)?\s+(?:the )?(?:date|day)(?:\s+today)?|today(?:'s| is)?\s+(?:date|day)|current\s+(?:date|day))/.test(text);
+    return bangla || english;
+  };
+  const currentDateAnswer = (value) => {
+    const wantsEnglish = /[a-z]/i.test(String(value || '')) && !/[\u0980-\u09FF]/.test(String(value || ''));
+    const locale = wantsEnglish ? 'en-GB' : 'bn-BD';
+    const parts = new Intl.DateTimeFormat(locale, { timeZone: 'Asia/Dhaka', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(new Date());
+    const get = (type) => parts.find((part) => part.type === type)?.value || '';
+    return wantsEnglish
+      ? `Today is ${get('weekday')}, ${get('day')} ${get('month')} ${get('year')}.`
+      : `আজ ${get('day')} ${get('month')} ${get('year')}, ${get('weekday')}।`;
+  };
+
   if (!question || !bookTitle) {
     res.statusCode = 400;
     return res.end(JSON.stringify({ error: 'Question and selected book are required.' }));
+  }
+  // Never ask a language model to guess a live date. Use Bangladesh time directly.
+  if (isCurrentDateQuestion(question)) {
+    res.statusCode = 200;
+    return res.end(JSON.stringify({ answer: currentDateAnswer(question) }));
   }
   if (!context && !externalFallback) {
     res.statusCode = 422;
