@@ -42,6 +42,13 @@ module.exports = async function handler(req, res) {
     const text = String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
     return /বাংলাদেশের?\s*বর্তমান\s*প্রধান\s*মন্ত্রী|বর্তমান\s*প্রধান\s*মন্ত্রী.*বাংলাদেশ|current\s+prime\s+minister.*bangladesh|bangladesh.*current\s+prime\s+minister/.test(text);
   };
+  const selectedBookVerifiedAnswer = (selectedBook, value) => {
+    const text = String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    if (selectedBook === 'বাংলা প্রথম পত্র' && text.includes('হাসি') && /(লেখক|কবি|রচয়িতা|রচনা করেছেন|কার লেখা)/.test(text)) {
+      return '‘হাসি’ কবিতার রচয়িতা রোকনুজ্জামান খান।';
+    }
+    return '';
+  };
 
   if (!question || !bookTitle) {
     res.statusCode = 400;
@@ -57,6 +64,12 @@ module.exports = async function handler(req, res) {
   if (isCurrentBangladeshPrimeMinisterQuestion(question)) {
     res.statusCode = 200;
     return res.end(JSON.stringify({ answer: 'বাংলাদেশের বর্তমান প্রধানমন্ত্রী তারেক রহমান। তিনি ১৭ ফেব্রুয়ারি ২০২৬ থেকে দায়িত্বে আছেন।' }));
+  }
+  // Deterministic selected-book facts also protect users on an older installed app shell.
+  const verifiedBookAnswer = selectedBookVerifiedAnswer(bookTitle, question);
+  if (verifiedBookAnswer) {
+    res.statusCode = 200;
+    return res.end(JSON.stringify({ answer: verifiedBookAnswer, sourceType: 'selected-book-reference' }));
   }
   if (!context && !externalFallback) {
     res.statusCode = 422;
