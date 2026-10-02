@@ -68,7 +68,7 @@ ${context}
 
   try {
     const configuredModel = process.env.GEMINI_MODEL;
-    const models = configuredModel ? [configuredModel] : ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    const models = configuredModel ? [configuredModel] : ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
     let result;
     for (const model of models) {
       result = await callGemini(model);
