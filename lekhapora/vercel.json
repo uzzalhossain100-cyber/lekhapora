@@ -1,0 +1,18 @@
+{
+  "cleanUrls": true,
+  "functions": {
+    "api/solution-job.js": { "maxDuration": 60 },
+    "api/answer-from-book.js": { "maxDuration": 60 }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Cache-Control", "value": "no-cache, max-age=0, must-revalidate" }
+      ]
+    }
+  ]
+}
