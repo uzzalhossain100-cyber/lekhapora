@@ -26,6 +26,165 @@
   function plain(value) {
     return typeof searchPlainText === 'function' ? searchPlainText(value) : String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   }
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+  function isWeakAnswer(answer) {
+    const text = plain(String(answer || '')).replace(/\s+/g, ' ').trim();
+    if (text.length < 4) return true;
+    if (text.indexOf('নিশ্চিত উত্তর') !== -1) return true;
+    if (text.indexOf('এই পৃষ্ঠা থেকে') !== -1 && text.indexOf('পাও') !== -1) return true;
+    return text === 'উত্তর পাওয়া যায়নি' || text === 'উত্তর পাওয়া যায়নি';
+  }
+  function isRealAnswer(answer) {
+    return Boolean(answer) && answer !== 'stopped' && !isWeakAnswer(answer);
+  }
+  function questionKey(value) {
+    return plain(value).toLowerCase().replace(/[?？।,.!]/g, '').replace(/\s+/g, ' ').trim();
+  }
+  function hintPages(bookId, query) {
+    const set = (typeof appSet === 'function' ? appSet(bookId) : []) || [];
+    const phrase = plain(query).toLowerCase();
+    const words = phrase.split(' ').filter((word) => word.length > 1);
+    const scored = [];
+    set.forEach((item) => {
+      const question = plain(item.t).toLowerCase();
+      const page = Number(item.p) || 0;
+      if (!question || !page) return;
+      let score = 0;
+      if (phrase && (question.includes(phrase) || phrase.includes(question.slice(0, 18)))) score += 80;
+      words.forEach((word) => { if (question.includes(word)) score += 8; });
+      if (score >= 16) scored.push({ page: page, score: score });
+    });
+    scored.sort((a, b) => b.score - a.score);
+    const pages = [];
+    scored.forEach((item) => {
+      if (pages.length < 4 && pages.indexOf(item.page) === -1) pages.push(item.page);
+    });
+    return pages;
+  }
+  function usefulSavedAnswer(bookId, query) {
+    const set = (typeof appSet === 'function' ? appSet(bookId) : []) || [];
+    const phrase = plain(query).toLowerCase();
+    if (phrase.length < 3) return '';
+    const words = phrase.split(' ').filter((word) => word.length > 1);
+    let best = '';
+    let bestScore = 0;
+    set.forEach((item) => {
+      if (isWeakAnswer(item.a)) return;
+      const question = plain(item.t).toLowerCase();
+      if (!question) return;
+      let score = 0;
+      if (question.includes(phrase) || phrase.includes(question)) score = 120;
+      else words.forEach((word) => { if (question.includes(word)) score += 10; });
+      if (words.length && score < 120 && score < Math.ceil(words.length * 0.6) * 10) score = 0;
+      if (score > bestScore) { bestScore = score; best = String(item.a || ''); }
+    });
+    return bestScore >= 40 ? best : '';
+  }
+  async function fitSlice(doc, from, to, anchor) {
+    let start = Math.max(1, from);
+    let end = Math.max(start, to);
+    const pin = Math.min(end, Math.max(start, Number(anchor) || end));
+    while (end >= start) {
+      const b64 = await slicePagesBase64(doc, start, end);
+      if (b64) return { from: start, to: end, b64: b64 };
+      if (start === end) return null;
+      if (end > pin) end -= 1;
+      else if (start < pin) start += 1;
+      else end -= 1;
+    }
+    return null;
+  }
+  async function postAnswerSlice(book, query, pdfBase64, retried) {
+    const response = await fetch('/api/answer-from-book', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: query, pdfBase64: pdfBase64, bookTitle: book.title, className: book.className || classLabel(appState.classId) })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.status === 429 && !retried) {
+      await sleep(5000);
+      return postAnswerSlice(book, query, pdfBase64, true);
+    }
+    if (!response.ok) throw new Error(data.error || 'ফাইল থেকে উত্তর পড়া যায়নি।');
+    return data;
+  }
+  function matchFilled(question, filled) {
+    const key = questionKey(question);
+    if (!key) return '';
+    let hit = (filled || []).find((item) => questionKey(item.question) === key);
+    if (!hit) {
+      hit = (filled || []).find((item) => {
+        const other = questionKey(item.question);
+        if (!other || other.length < 8 || key.length < 8) return false;
+        return key.includes(other.slice(0, 24)) || other.includes(key.slice(0, 24));
+      });
+    }
+    return hit && isRealAnswer(hit.answer) ? hit.answer : '';
+  }
+  async function fillWeakItems(job, doc, box) {
+    const weak = (job.items || []).filter((item) => isWeakAnswer(item.answer));
+    if (!weak.length || !doc) return 0;
+    const groups = [];
+    weak.slice().sort((a, b) => (Number(a.page) || 1) - (Number(b.page) || 1)).forEach((item) => {
+      const page = Number(item.page) || Number(item.sliceFrom) || 1;
+      const last = groups[groups.length - 1];
+      if (last && page <= last.max + 5 && last.items.length < 8) {
+        last.items.push(item);
+        last.max = Math.max(last.max, page);
+        last.min = Math.min(last.min, page);
+      } else groups.push({ min: page, max: page, items: [item] });
+    });
+    let fixed = 0;
+    let fallbackCalls = 0;
+    for (let index = 0; index < groups.length; index += 1) {
+      if (solutionCancel) break;
+      const group = groups[index];
+      const anchor = group.min;
+      const from = Math.max(1, Math.min(group.min, Number(group.items[0].sliceFrom) || group.min) - 6);
+      const to = Math.min(job.pageCount || doc.getPageCount(), Math.max(group.max, Number(group.items[0].sliceTo) || group.max) + 2);
+      if (box) box.innerHTML = progressHtml(job, job.title + ' — খালি উত্তর পূরণ হচ্ছে (' + bnNum(index + 1) + '/' + bnNum(groups.length) + ')…');
+      const slice = await fitSlice(doc, from, to, anchor);
+      if (!slice) continue;
+      let filled = [];
+      try {
+        const data = await postJson('/api/solution-job', {
+          pdfBase64: slice.b64,
+          startPage: slice.from,
+          endPage: slice.to,
+          bookTitle: job.title,
+          className: job.className,
+          questions: group.items.map((item) => ({ question: item.question, page: item.page }))
+        });
+        filled = data.fill ? (data.items || []) : [];
+      } catch (error) {
+        if (/লগইন/.test(error.message || '')) throw error;
+        filled = [];
+      }
+      group.items.forEach((item) => {
+        const answer = matchFilled(item.question, filled);
+        if (answer) { item.answer = answer; fixed += 1; }
+      });
+      for (const item of group.items) {
+        if (solutionCancel || !isWeakAnswer(item.answer) || fallbackCalls >= 48) continue;
+        fallbackCalls += 1;
+        try {
+          const data = await postAnswerSlice(bookForJob(job), item.question, slice.b64);
+          if (data.found && isRealAnswer(data.answer)) { item.answer = data.answer; fixed += 1; }
+        } catch (error) {
+          if (/লগইন|GEMINI_API_KEY/.test(error.message || '')) throw error;
+        }
+      }
+      writeJob(job);
+    }
+    return fixed;
+  }
+  function bookForJob(job) {
+    return { id: job.bookId, title: job.title || 'বই', className: job.className || '' };
+  }
+
   function newId(prefix) {
     return `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   }
@@ -127,6 +286,23 @@
       };
     }
     return originalAppBook(id);
+  };
+  window.answerBookInfo = function (bookId) {
+    if (!bookId) return null;
+    if (bookId === 'general') return { id: 'general', title: 'সাধারণ জ্ঞান', icon: '🌐', general: true };
+    const book = window.appBook(bookId);
+    return book && book.title ? book : null;
+  };
+  const originalSelectAnswerBook = window.selectAnswerBook;
+  window.selectAnswerBook = function (bookId) {
+    const query = String(appState.searchQuery || appState.generatedQuery || '').trim();
+    if (bookId && bookId !== 'general' && query && (!BUILTIN_IDS.has(bookId) || localFiles[bookId])) return answerFromAddedBook(bookId, query);
+    return originalSelectAnswerBook ? originalSelectAnswerBook(bookId) : undefined;
+  };
+  const originalSearchBookAnswers = window.searchBookAnswers;
+  window.searchBookAnswers = function (query, bookId) {
+    const rows = originalSearchBookAnswers ? originalSearchBookAnswers(query, bookId) : [];
+    return rows.filter((entry) => entry && !isWeakAnswer(entry.answer));
   };
   window.appSet = function (id) {
     const overlay = catalog.solutions && catalog.solutions[id];
@@ -248,7 +424,7 @@
     if (!set.length) {
       return `<div class="school-app"><div class="app-shell">${appHeader(`<b>${name}</b> › ${esc(book.title)} › সমাধান`)}<div class="app-panel"><div class="marked-empty"><div>💡</div><h2>সমাধান এখনো সংরক্ষণ হয়নি</h2><p>এডমিন সেটিংসের “সমাধান তৈরী করুন” থেকে এই বইয়ের সমাধান বই তৈরি হবে।</p></div></div></div></div>`;
     }
-    return `<div class="school-app"><div class="app-shell">${appHeader(`<b>${name}</b> › ${esc(book.title)} › সমাধান`)}<div class="solution-page"><aside class="solution-side"><div class="side-title"><h2>সমাধান সূচি</h2><p>যে প্রশ্নটি দেখতে চান ক্লিক করুন</p></div><div class="side-scroll">${set.map((item, itemIndex) => `<button class="solution-jump ${itemIndex === index ? 'active' : ''}" onclick="appGo('solutions',{bookId:'${book.id}',mode:'solutions',solutionIndex:${itemIndex}})">পৃষ্ঠা ${bnNum(item.p)} · প্রশ্ন ${esc(item.q)}<br><span style="font-weight:700;font-size:11px">${item.l}</span></button>`).join('')}</div></aside><main class="solution-main"><button class="solution-return" onclick="appBack()">← ব্যাক</button><div class="solution-header"><h1>${esc(book.title)} — সমাধান</h1><p>আগে চেষ্টা করো, না পারলে ধাপে ধাপে সমাধান দেখো।</p></div><div class="solution-tip">💡 এটি সংরক্ষিত সমাধান বই। প্রয়োজনীয় প্রশ্ন চিহ্নিত করতে নিচের টিক ব্যবহার করুন।</div>${set.map((item, itemIndex) => `<article id="full-solution-${itemIndex}" class="standard-card ${itemIndex === index ? 'active' : ''}"><div class="standard-card-head"><span class="pno">পৃষ্ঠা ${bnNum(item.p)}</span><div><strong>${item.l} · প্রশ্ন ${esc(item.q)}</strong><small>${esc(item.type || appQuestionType(item))}</small></div></div><div class="standard-question"><b>মূল বইয়ের প্রশ্ন · প্রশ্ন ${esc(item.q)}</b><div class="standard-question-text">${item.t}</div></div><div class="standard-answer-label">সমাধান</div><div class="standard-answer">${solutionAnswerMarkup(item, book.id, itemIndex, true)}</div></article>`).join('')}</main></div></div></div>`;
+    return `<div class="school-app"><div class="app-shell">${appHeader(`<b>${name}</b> › ${esc(book.title)} › সমাধান`)}<div class="solution-page"><aside class="solution-side"><div class="side-title"><h2>সমাধান সূচি</h2><p>যে প্রশ্নটি দেখতে চান ক্লিক করুন</p></div><div class="side-scroll">${set.map((item, itemIndex) => `<button class="solution-jump ${itemIndex === index ? 'active' : ''}" onclick="appGo('solutions',{bookId:'${book.id}',mode:'solutions',solutionIndex:${itemIndex}})">পৃষ্ঠা ${bnNum(item.p)} · প্রশ্ন ${esc(item.q)}<br><span style="font-weight:700;font-size:11px">${item.l}</span></button>`).join('')}</div></aside><main class="solution-main"><button class="solution-return" onclick="appBack()">← ব্যাক</button><div class="solution-header"><h1>${esc(book.title)} — সমাধান</h1><p>আগে চেষ্টা করো, না পারলে ধাপে ধাপে সমাধান দেখো।</p></div><div class="solution-tip">💡 এটি সংরক্ষিত সমাধান বই। প্রয়োজনীয় প্রশ্ন চিহ্নিত করতে নিচের টিক ব্যবহার করুন।</div>${set.map((item, itemIndex) => `<article id="full-solution-${itemIndex}" class="standard-card ${itemIndex === index ? 'active' : ''}"><div class="standard-card-head"><span class="pno">পৃষ্ঠা ${bnNum(item.p)}</span><div><strong>${item.l} · প্রশ্ন ${esc(item.q)}</strong><small>${esc(item.type || appQuestionType(item))}</small></div></div><div class="standard-question"><b>মূল বইয়ের প্রশ্ন · প্রশ্ন ${esc(item.q)}</b><div class="standard-question-text">${item.t}</div></div><div class="standard-answer-label">সমাধান</div><div class="standard-answer">${isWeakAnswer(item.a) ? '<p>এই প্রশ্নের উত্তর এখনো বই থেকে পূরণ হয়নি। সেটিংসে “খালি উত্তর পূরণ করুন” চাপুন।</p>' : solutionAnswerMarkup(item, book.id, itemIndex, true)}</div></article>`).join('')}</main></div></div></div>`;
   }
 
   function loginMarkup() {
@@ -284,7 +460,7 @@
       <form class="admin-form" onsubmit="saveAdminBookFile(event)"><select id="fileBookSelect">${optionList(classBooks, selectedBook, 'বই নির্বাচন')}</select><input id="bookFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt,application/pdf,image/*,text/plain" multiple aria-label="বইয়ের ফাইল" style="height:auto;padding:8px"><button type="submit">ফাইল সেভ করুন</button></form>
       <p class="admin-note">লিংকের পাশাপাশি PDF, JPG বা TXT আপলোড করুন। AI তখন সরাসরি ফাইল পড়ে উত্তর দেবে। বড় PDF এই ব্রাউজারে সেভ থাকে।${localFiles[selectedBook] ? ' সেভ করা ফাইল: ' + esc(localFiles[selectedBook]) : ''}</p>
       <div class="admin-list">${bookItems || '<p class="admin-note">এই শ্রেণীতে এখনো নতুন বই নেই।</p>'}</div></section>
-      <section class="admin-card"><h2>সমাধান তৈরী করুন</h2><p>শ্রেণী ও বই বেছে নিয়ে বাটনে চাপুন। আপলোড করা PDF, JPG বা TXT থেকে পুরো বইয়ের অনুশীলনী অধ্যায়ভিত্তিক তুলে উত্তরসহ সমাধান সংরক্ষণ হবে। বড় বইয়ে ১০–২০ মিনিট লাগতে পারে।</p><div class="admin-form"><select id="solutionClassSelect" onchange="setSolutionClass(this.value)">${optionList(classes, solutionClass, 'শ্রেণী নির্বাচন')}</select><select id="solutionBookSelect">${optionList(solutionBooks, solutionBook, 'বই নির্বাচন')}</select><button type="button" onclick="startSolutionJob(false)">সমাধান তৈরী করুন</button></div>${resume}<div id="solutionProgress"></div></section></div></div>`;
+      <section class="admin-card"><h2>সমাধান তৈরী করুন</h2><p>শ্রেণী ও বই বেছে নিয়ে বাটনে চাপুন। আপলোড করা PDF, JPG বা TXT থেকে পুরো বইয়ের অনুশীলনী অধ্যায়ভিত্তিক তুলে উত্তরসহ সমাধান সংরক্ষণ হবে। বড় বইয়ে ১০–২০ মিনিট লাগতে পারে। আগে বানানো সমাধানে খালি উত্তর থাকলে পুরো বই আবার না বানিয়ে “খালি উত্তর পূরণ করুন” চাপুন।</p><div class="admin-form"><select id="solutionClassSelect" onchange="setSolutionClass(this.value)">${optionList(classes, solutionClass, 'শ্রেণী নির্বাচন')}</select><select id="solutionBookSelect">${optionList(solutionBooks, solutionBook, 'বই নির্বাচন')}</select><button type="button" onclick="startSolutionJob(false)">সমাধান তৈরী করুন</button><button type="button" class="secondary" onclick="repairSavedAnswers()">খালি উত্তর পূরণ করুন</button></div>${resume}<div id="solutionProgress"></div></section></div></div>`;
   }
 
   window.renderSchoolApp = function () {
@@ -378,9 +554,11 @@
   }
   function beginAnswer(book, query) {
     const requestId = `${Date.now()}${Math.random()}`;
+    const clean = String(query || '').trim();
     appState = Object.assign({}, appState, {
+      searchQuery: clean,
       generatedBookId: book.id,
-      generatedQuery: query,
+      generatedQuery: clean,
       generatedMessage: '',
       sourceViewerBookId: '',
       sourceViewerPage: 0,
@@ -402,13 +580,16 @@
     renderGeneratedBookAnswer();
     return requestId;
   }
+
   function finishAnswer(requestId, answer, error) {
     if (appState.aiRequestId !== requestId) return;
-    appState = Object.assign({}, appState, error
-      ? { aiLoading: false, aiError: error }
-      : { aiLoading: false, aiAnswer: answer, aiAnswerKind: 'ai', aiError: '', aiVerificationStatus: 'source-checked' });
+    const clean = isRealAnswer(answer) ? String(answer) : '';
+    appState = Object.assign({}, appState, error || !clean
+      ? { aiLoading: false, aiError: error || 'নির্বাচিত বই থেকে উত্তর তৈরি করা যায়নি।', aiAnswer: '', aiFallback: false, aiAnswerKind: '' }
+      : { aiLoading: false, aiAnswer: clean, aiAnswerKind: 'ai', aiError: '', aiFallback: false, aiVerificationStatus: 'source-checked' });
     renderGeneratedBookAnswer();
   }
+
 
   function fileDb() {
     return new Promise((resolve, reject) => {
@@ -485,35 +666,41 @@
   }
   async function answerFromPdfFile(book, query, requestId, bytes) {
     await loadPdfLib();
-    const doc = await window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
-    const pageCount = Math.min(doc.getPageCount(), 160);
-    for (let start = 1; start <= pageCount; start += 4) {
+    let doc;
+    try {
+      doc = await window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+    } catch (_) {
+      throw new Error('এই ব্রাউজারে বড় PDF খোলা যায়নি। কম্পিউটারের Chrome দিয়ে আবার চেষ্টা করুন।');
+    }
+    const pageCount = Math.min(doc.getPageCount(), 180);
+    const ranges = [];
+    hintPages(book.id, query).forEach((page) => {
+      ranges.push([Math.max(1, page - 6), Math.min(pageCount, page + 4), page]);
+    });
+    for (let start = 1; start <= pageCount; start += 8) ranges.push([start, Math.min(pageCount, start + 7), Math.min(pageCount, start + 7)]);
+    for (let start = 5; start <= pageCount; start += 8) ranges.push([start, Math.min(pageCount, start + 7), Math.min(pageCount, start + 7)]);
+    const seen = new Set();
+    let lastError = '';
+    for (const range of ranges) {
       if (appState.aiRequestId !== requestId) return 'stopped';
-      const end = Math.min(pageCount, start + 3);
-      setVoiceSearchStatus(`আপলোড করা PDF-এর পৃষ্ঠা ${bnNum(start)}–${bnNum(end)} পড়া হচ্ছে…`);
-      const ranges = [];
-      const combined = await slicePagesBase64(doc, start, end);
-      if (combined) ranges.push(combined);
-      else {
-        for (let page = start; page <= end; page += 1) {
-          const one = await slicePagesBase64(doc, page, page);
-          if (one) ranges.push(one);
-        }
-      }
-      for (const pdfBase64 of ranges) {
-        if (appState.aiRequestId !== requestId) return 'stopped';
-        const response = await fetch('/api/answer-from-book', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: query, pdfBase64: pdfBase64, bookTitle: book.title, className: classLabel(appState.classId) })
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || 'ফাইল থেকে উত্তর পড়া যায়নি।');
-        if (data.found && data.answer) return data.answer;
+      const key = range[0] + '-' + range[1];
+      if (seen.has(key)) continue;
+      seen.add(key);
+      setVoiceSearchStatus('আপলোড করা PDF-এর পৃষ্ঠা ' + bnNum(range[0]) + '–' + bnNum(range[1]) + ' পড়া হচ্ছে…');
+      const slice = await fitSlice(doc, range[0], range[1], range[2]);
+      if (!slice) continue;
+      try {
+        const data = await postAnswerSlice(book, query, slice.b64);
+        if (data.found && isRealAnswer(data.answer)) return data.answer;
+      } catch (error) {
+        lastError = error.message || lastError;
+        if (/GEMINI_API_KEY|সেট করা নেই/.test(lastError)) throw error;
       }
     }
+    if (lastError && /ব্যস্ত|অনেক অনুরোধ/.test(lastError)) throw new Error(lastError);
     return '';
   }
+
   async function answerFromLocalFile(book, query, requestId) {
     const row = await getBookFiles(book.id);
     const files = row && Array.isArray(row.files) ? row.files : [];
@@ -537,7 +724,7 @@
         bookTitle: book.title,
         className: classLabel(appState.classId)
       });
-      if (data.found && data.answer) return data.answer;
+      if (data.found && isRealAnswer(data.answer)) return data.answer;
     }
     const texts = files.filter((file) => fileKind(file) === 'txt');
     for (const file of texts) {
@@ -554,7 +741,7 @@
           bookTitle: book.title,
           className: classLabel(appState.classId)
         });
-        if (data.found && data.answer) return data.answer;
+        if (data.found && isRealAnswer(data.answer)) return data.answer;
       }
     }
     return '';
@@ -591,57 +778,85 @@
     if (!book) return setVoiceSearchStatus('বইটি পাওয়া যায়নি।');
     const requestId = beginAnswer(book, query);
     try {
-      const localAnswer = await answerFromLocalFile(book, query, requestId);
+      const saved = usefulSavedAnswer(bookId, query);
+      if (isRealAnswer(saved)) {
+        setVoiceSearchStatus('');
+        finishAnswer(requestId, saved);
+        return;
+      }
+      let localAnswer = '';
+      let localError = '';
+      try {
+        localAnswer = await answerFromLocalFile(book, query, requestId);
+      } catch (error) {
+        localError = error.message || '';
+      }
       if (localAnswer === 'stopped') return;
-      if (localAnswer) {
+      if (isRealAnswer(localAnswer)) {
         setVoiceSearchStatus('');
         finishAnswer(requestId, localAnswer);
         return;
       }
-      if (!book.link) throw new Error('এই বইয়ের URL বা ফাইল সেটিংসে সেভ করা নেই।');
-      setVoiceSearchStatus('সেভ করা লিংক থেকে বই খোলা হচ্ছে… বড় PDF হলে একটু সময় লাগবে।');
-      let data = await postJson('/api/read-book', {
-        action: 'open',
-        url: book.link,
-        question: query,
-        bookTitle: book.title,
-        className: classLabel(appState.classId)
-      });
-      if (data.fileUri && !data.answer) {
-        setVoiceSearchStatus('বইয়ের পাতা পড়ে উত্তর খোঁজা হচ্ছে…');
-        data = await postJson('/api/read-book', {
-          action: 'answer',
-          url: book.link,
-          fileUri: data.fileUri,
-          mimeType: data.mimeType || 'application/pdf',
-          fileName: data.fileName || '',
-          question: query,
-          bookTitle: book.title,
-          className: classLabel(appState.classId)
-        });
+      let linkError = '';
+      if (book.link) {
+        const hints = hintPages(bookId, query);
+        try {
+          setVoiceSearchStatus('সেভ করা লিংক থেকে বই খোলা হচ্ছে… বড় PDF হলে একটু সময় লাগবে।');
+          let data = await postJson('/api/read-book', {
+            action: 'open',
+            url: book.link,
+            question: query,
+            bookTitle: book.title,
+            className: classLabel(appState.classId),
+            pageHint: hints[0] || 0
+          });
+          if (data.fileUri && !isRealAnswer(data.answer)) {
+            setVoiceSearchStatus('বইয়ের পাতা পড়ে উত্তর খোঁজা হচ্ছে…');
+            data = await postJson('/api/read-book', {
+              action: 'answer',
+              url: book.link,
+              fileUri: data.fileUri,
+              mimeType: data.mimeType || 'application/pdf',
+              fileName: data.fileName || '',
+              question: query,
+              bookTitle: book.title,
+              className: classLabel(appState.classId),
+              pageHint: hints[0] || 0
+            });
+          }
+          if (data.found && isRealAnswer(data.answer)) {
+            setVoiceSearchStatus('');
+            finishAnswer(requestId, data.answer);
+            return;
+          }
+          linkError = data.error || '';
+        } catch (error) {
+          linkError = error.message || '';
+        }
+        try {
+          setVoiceSearchStatus('লিংক থেকে PDF নিয়ে পাতা ধরে পড়া হচ্ছে…');
+          const bytes = await Promise.race([
+            downloadBookPdf(book.link),
+            sleep(40000).then(() => { throw new Error('লিংক থেকে PDF ডাউনলোড শেষ হয়নি।'); })
+          ]);
+          const downloaded = await answerFromPdfFile(book, query, requestId, bytes);
+          if (downloaded === 'stopped') return;
+          if (isRealAnswer(downloaded)) {
+            setVoiceSearchStatus('');
+            finishAnswer(requestId, downloaded);
+            return;
+          }
+        } catch (_) {}
       }
-      if (data.found && data.answer) {
-        setVoiceSearchStatus('');
-        finishAnswer(requestId, data.answer);
-        return;
-      }
-      const context = solutionContext(bookId);
-      if (context) {
-        const response = await fetch('/api/generate-answer-v2', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: query, bookTitle: book.title, context: context, externalFallback: false, answerLanguage: answerLanguageForQuestion(query) })
-        });
-        const saved = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(saved.error || data.error || 'AI উত্তর তৈরি করা যায়নি।');
-        finishAnswer(requestId, String(saved.answer || ''));
-        return;
-      }
-      throw new Error(data.error || 'এই লিংকের বই বা সাইটে প্রশ্নের উত্তর পাওয়া যায়নি। বইয়ের যে পাতায় পাঠ আছে সেই লিংক দিন। লিংকটি সবার জন্য খোলা থাকতে হবে।');
+      const uploaded = Boolean(localFiles[bookId]);
+      throw new Error([localError, linkError].filter(Boolean).join(' ') + (uploaded
+        ? ' আপলোড করা ফাইলের পাতায় এই প্রশ্নের উত্তর পাওয়া যায়নি। প্রশ্নটি এই বইয়ের পাঠ থেকে কিনা দেখুন।'
+        : ' নির্বাচিত বইয়ের লিংক থেকে উত্তর আসেনি। সেটিংস থেকে PDF আপলোড করলে খুঁজুন পেজ সেই ফাইল পড়ে উত্তর দেবে।'));
     } catch (error) {
       finishAnswer(requestId, '', error.message || 'AI উত্তর তৈরি করা যায়নি।');
     }
   }
+
   function solutionContext(bookId) {
     const set = appSet(bookId) || [];
     if (!set.length) return '';
@@ -873,14 +1088,16 @@
     } catch (_) {}
   }
   function dedupeItems(items) {
-    const seen = new Set();
-    return items.filter((item) => {
-      const key = plain(item.question).toLowerCase();
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
-      return true;
+    const map = new Map();
+    (items || []).forEach((item) => {
+      const key = plain(item && item.question).toLowerCase();
+      if (!key) return;
+      const prev = map.get(key);
+      if (!prev || (isWeakAnswer(prev.answer) && !isWeakAnswer(item.answer))) map.set(key, item);
     });
+    return Array.from(map.values());
   }
+
   function recordsFromItems(items) {
     const groups = new Map();
     dedupeItems(items).forEach((item) => {
@@ -932,22 +1149,23 @@
   window.resumeSolutionJob = function () { startSolutionJob(true); };
   let solutionChunks = [];
   async function finishSolution(job, box) {
-    const records = recordsFromItems(job.items || []);
+    const records = recordsFromItems((job.items || []).filter((item) => item && item.question && !isWeakAnswer(item.answer)));
     if (!records.length) {
       writeJob(null);
-      if (box) box.innerHTML = '<p class="admin-note error">পুরো বই ঘুরেও কোনো অনুশীলনী পাওয়া যায়নি। PDF আপলোড আছে কিনা দেখুন, অথবা একটু পরে আবার চেষ্টা করুন।</p>';
+      if (box) box.innerHTML = '<p class="admin-note error">বই থেকে প্রকৃত উত্তরসহ প্রশ্ন পাওয়া যায়নি। PDF আপলোড আছে কিনা দেখুন, তারপর “খালি উত্তর পূরণ করুন” বা আবার “সমাধান তৈরী করুন” চাপুন।</p>';
       return;
     }
     catalog.solutions = Object.assign({}, catalog.solutions || {}, { [job.bookId]: records });
     try {
       await saveCatalog();
       writeJob(null);
-      if (box) box.innerHTML = `<p class="admin-note">${bnNum(records.length)}টি প্রশ্নসহ পুরো সমাধান বই সংরক্ষণ হয়েছে। শ্রেণী পেজের সমাধানে এখন এটি দেখা যাবে।</p>`;
+      if (box) box.innerHTML = '<p class="admin-note">' + bnNum(records.length) + 'টি প্রশ্নের প্রকৃত উত্তরসহ সমাধান বই সংরক্ষণ হয়েছে। শ্রেণী পেজের সমাধানে এখন এটি দেখা যাবে।</p>';
     } catch (error) {
       writeJob(job);
-      if (box) box.innerHTML = `<p class="admin-note error">সমাধান তৈরী হয়েছে, কিন্তু সেভ হয়নি: ${esc(error.message)}</p>`;
+      if (box) box.innerHTML = '<p class="admin-note error">সমাধান তৈরী হয়েছে, কিন্তু সেভ হয়নি: ' + esc(error.message) + '</p>';
     }
   }
+
   async function askSolutionSlice(job, from, to, pdfBase64) {
     try {
       return await postJson('/api/solution-job', { pdfBase64: pdfBase64, startPage: from, endPage: to, bookTitle: job.title, className: job.className });
@@ -962,7 +1180,12 @@
   }
   async function solveLocalPdf(job, bytes, box) {
     await loadPdfLib();
-    const doc = await window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+    let doc;
+    try {
+      doc = await window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+    } catch (_) {
+      throw new Error('এই ব্রাউজারে বড় PDF খোলা যায়নি। কম্পিউটারের Chrome দিয়ে আবার চেষ্টা করুন।');
+    }
     job.kind = 'pdf';
     job.pageCount = Math.min(doc.getPageCount(), 180);
     if (job.nextPage < 1 || job.nextPage > job.pageCount) job.nextPage = 1;
@@ -972,27 +1195,38 @@
         if (box) box.innerHTML = '<p class="admin-note warn">সমাধান তৈরী থামানো হয়েছে। পরে “চালিয়ে যান” চাপতে পারবেন।</p>';
         return;
       }
-      const end = Math.min(job.pageCount, job.nextPage + 3);
-      if (box) box.innerHTML = progressHtml(job, `${job.title} — পুরো বই থেকে সমাধান তৈরী হচ্ছে…`);
-      const slices = [];
-      const combined = await slicePagesBase64(doc, job.nextPage, end);
-      if (combined) slices.push([job.nextPage, end, combined]);
-      else {
-        for (let page = job.nextPage; page <= end; page += 1) {
-          const one = await slicePagesBase64(doc, page, page);
-          if (one) slices.push([page, page, one]);
-        }
-      }
-      for (const slice of slices) {
-        if (solutionCancel) break;
-        const data = await askSolutionSlice(job, slice[0], slice[1], slice[2]);
-        job.items = dedupeItems((job.items || []).concat(data.items || []));
+      const start = job.nextPage;
+      const from = Math.max(1, start - 4);
+      const end = Math.min(job.pageCount, start + 3);
+      if (box) box.innerHTML = progressHtml(job, job.title + ' — পুরো বই থেকে সমাধান তৈরী হচ্ছে…');
+      const slice = await fitSlice(doc, from, end, end);
+      if (slice) {
+        const data = await askSolutionSlice(job, slice.from, slice.to, slice.b64);
+        const tagged = (data.items || []).map((item) => Object.assign({}, item, {
+          sliceFrom: slice.from,
+          sliceTo: slice.to,
+          page: Number(item.page) || slice.from
+        }));
+        job.items = dedupeItems((job.items || []).concat(tagged));
       }
       job.nextPage = end + 1;
       writeJob(job);
     }
-    if (!solutionCancel) await finishSolution(job, box);
+    if (solutionCancel) return;
+    const weakCount = (job.items || []).filter((item) => isWeakAnswer(item.answer)).length;
+    if (weakCount) {
+      if (box) box.innerHTML = progressHtml(job, job.title + ' — ' + bnNum(weakCount) + 'টি প্রশ্নের উত্তর বইয়ের পাঠ থেকে পূরণ হচ্ছে…');
+      await fillWeakItems(job, doc, box);
+      writeJob(job);
+    }
+    if (solutionCancel) {
+      if (box) box.innerHTML = '<p class="admin-note warn">সমাধান তৈরী থামানো হয়েছে। পরে “চালিয়ে যান” চাপতে পারবেন।</p>';
+      return;
+    }
+    job.items = (job.items || []).filter((item) => item && item.question && !isWeakAnswer(item.answer));
+    await finishSolution(job, box);
   }
+
   async function solveLocalImages(job, images, box) {
     job.kind = 'html';
     job.pageCount = images.length;
@@ -1005,10 +1239,11 @@
       }
       if (box) box.innerHTML = progressHtml(job, `${job.title} — ছবি থেকে সমাধান তৈরী হচ্ছে…`);
       const image = await imageBase64(images[job.nextPage - 1]);
+      const previousImage = job.nextPage > 1 ? await imageBase64(images[job.nextPage - 2]) : '';
       let data = { items: [] };
       if (image) {
         try {
-          data = await postJson('/api/read-book', { action: 'solve-image', imageBase64: image, mimeType: 'image/jpeg', bookTitle: job.title, className: job.className, part: job.nextPage });
+          data = await postJson('/api/read-book', { action: 'solve-image', imageBase64: image, previousImageBase64: previousImage, mimeType: 'image/jpeg', bookTitle: job.title, className: job.className, part: job.nextPage });
         } catch (_) {}
       }
       job.items = dedupeItems((job.items || []).concat(data.items || []));
@@ -1043,6 +1278,53 @@
   }
   window.cancelSolutionJob = function () { solutionCancel = true; };
   window.resumeSolutionJob = function () { startSolutionJob(true); };
+
+  window.repairSavedAnswers = async function () {
+    if (!adminSession.loggedIn) return alert('আগে লগইন করুন।');
+    const classId = document.getElementById('solutionClassSelect')?.value || appState.solutionClassId || '';
+    const bookId = document.getElementById('solutionBookSelect')?.value || appState.solutionBookId || '';
+    const book = findBook(bookId) || appBook(bookId);
+    const records = (catalog.solutions && catalog.solutions[bookId]) || [];
+    if (!book || !records.length) return alert('এই বইয়ের সংরক্ষিত সমাধান নেই। আগে সমাধান তৈরী করুন।');
+    const weak = records.filter((item) => isWeakAnswer(item.a));
+    if (!weak.length) return alert('খালি উত্তর নেই। সংরক্ষিত উত্তরগুলো আগেই আছে।');
+    let stored = null;
+    try { stored = await getBookFiles(bookId); } catch (_) {}
+    const pdf = stored && stored.files ? stored.files.find((file) => fileKind(file) === 'pdf') : null;
+    if (!pdf) return alert('খালি উত্তর পূরণ করতে এই ব্রাউজারে বইয়ের PDF আপলোড করে রাখুন। ফাইল এই ব্রাউজারে সেভ থাকে।');
+    if (!confirm(bnNum(weak.length) + 'টি খালি উত্তর আপলোড করা বই থেকে পূরণ হবে। পুরো সমাধান আবার বানাতে হবে না। পেজ বন্ধ করবেন না। চালু করবেন?')) return;
+    const box = document.getElementById('solutionProgress');
+    solutionCancel = false;
+    const job = {
+      bookId: bookId,
+      classId: classId,
+      title: book.title,
+      className: classLabel(classId),
+      kind: 'pdf',
+      pageCount: 0,
+      nextPage: 1,
+      items: records.map((item) => ({ page: item.p || 1, chapter: item.l, type: item.type || 'অনুশীলনী', question: item.t, answer: item.a }))
+    };
+    try {
+      await loadPdfLib();
+      const doc = await window.PDFLib.PDFDocument.load(pdf.bytes, { ignoreEncryption: true });
+      job.pageCount = Math.min(doc.getPageCount(), 180);
+      job.nextPage = job.pageCount + 1;
+      if (box) box.innerHTML = progressHtml(job, job.title + ' — খালি উত্তর বই থেকে পূরণ হচ্ছে…');
+      await fillWeakItems(job, doc, box);
+      if (solutionCancel) {
+        if (box) box.innerHTML = '<p class="admin-note warn">পূরণ থামানো হয়েছে। আবার “খালি উত্তর পূরণ করুন” চাপুন।</p>';
+        return;
+      }
+      const left = job.items.filter((item) => isWeakAnswer(item.answer)).length;
+      job.items = job.items.filter((item) => item && item.question && !isWeakAnswer(item.answer));
+      await finishSolution(job, box);
+      if (left && box) box.innerHTML += '<p class="admin-note warn">' + bnNum(left) + 'টি প্রশ্নের উত্তর এই পাতায় মেলেনি, তাই সেগুলো সমাধান বইয়ে রাখা হয়নি।</p>';
+    } catch (error) {
+      if (box) box.innerHTML = '<p class="admin-note error">' + esc(error.message || 'উত্তর পূরণ করা যায়নি।') + '</p>';
+    }
+  };
+
   window.startSolutionJob = async function (resume) {
     if (!adminSession.loggedIn) return alert('আগে লগইন করুন।');
     let job = resume ? readJob() : null;
@@ -1120,8 +1402,10 @@
           data = await postJson('/api/read-book', { action: 'solve-text', url: job.url, text: solutionChunks[job.nextPage - 1] || '', bookTitle: job.title, className: job.className, part: job.nextPage });
           job.nextPage += 1;
         } else {
-          const end = Math.min(job.pageCount, job.nextPage + 3);
-          data = await postJson('/api/read-book', { action: 'solve-pdf', url: job.url, fileUri: job.fileUri || '', mimeType: job.mimeType || 'application/pdf', startPage: job.nextPage, endPage: end, bookTitle: job.title, className: job.className });
+          const start = job.nextPage;
+          const from = Math.max(1, start - 4);
+          const end = Math.min(job.pageCount, start + 3);
+          data = await postJson('/api/read-book', { action: 'solve-pdf', url: job.url, fileUri: job.fileUri || '', mimeType: job.mimeType || 'application/pdf', startPage: from, endPage: end, bookTitle: job.title, className: job.className });
           job.nextPage = end + 1;
         }
         job.items = dedupeItems((job.items || []).concat(data.items || []));
@@ -1132,6 +1416,7 @@
         return;
       }
     }
+    job.items = (job.items || []).filter((item) => item && item.question && !isWeakAnswer(item.answer));
     await finishSolution(job, box);
   };
 
