@@ -244,7 +244,7 @@
     }
     const index = Number.isInteger(appState.solutionIndex) && set[appState.solutionIndex] ? appState.solutionIndex : 0;
     if (!set.length) {
-      return `<div class="school-app"><div class="app-shell">${appHeader(`<b>${name}</b> › ${esc(book.title)} › সমাধান`)}<div class="app-panel"><div class="marked-empty"><div>💡</div><h2>সমাধান এখনো সংরক্ষণ হয়নি</h2><p>এডমিন সেটিংসের “সমাধান তৈরি করুন” থেকে এই বইয়ের সমাধান বই তৈরি হবে।</p></div></div></div></div>`;
+      return `<div class="school-app"><div class="app-shell">${appHeader(`<b>${name}</b> › ${esc(book.title)} › সমাধান`)}<div class="app-panel"><div class="marked-empty"><div>💡</div><h2>সমাধান এখনো সংরক্ষণ হয়নি</h2><p>এডমিন সেটিংসের “সমাধান তৈরী করুন” থেকে এই বইয়ের সমাধান বই তৈরি হবে।</p></div></div></div></div>`;
     }
     return `<div class="school-app"><div class="app-shell">${appHeader(`<b>${name}</b> › ${esc(book.title)} › সমাধান`)}<div class="solution-page"><aside class="solution-side"><div class="side-title"><h2>সমাধান সূচি</h2><p>যে প্রশ্নটি দেখতে চান ক্লিক করুন</p></div><div class="side-scroll">${set.map((item, itemIndex) => `<button class="solution-jump ${itemIndex === index ? 'active' : ''}" onclick="appGo('solutions',{bookId:'${book.id}',mode:'solutions',solutionIndex:${itemIndex}})">পৃষ্ঠা ${bnNum(item.p)} · প্রশ্ন ${esc(item.q)}<br><span style="font-weight:700;font-size:11px">${item.l}</span></button>`).join('')}</div></aside><main class="solution-main"><button class="solution-return" onclick="appBack()">← ব্যাক</button><div class="solution-header"><h1>${esc(book.title)} — সমাধান</h1><p>আগে চেষ্টা করো, না পারলে ধাপে ধাপে সমাধান দেখো।</p></div><div class="solution-tip">💡 এটি সংরক্ষিত সমাধান বই। প্রয়োজনীয় প্রশ্ন চিহ্নিত করতে নিচের টিক ব্যবহার করুন।</div>${set.map((item, itemIndex) => `<article id="full-solution-${itemIndex}" class="standard-card ${itemIndex === index ? 'active' : ''}"><div class="standard-card-head"><span class="pno">পৃষ্ঠা ${bnNum(item.p)}</span><div><strong>${item.l} · প্রশ্ন ${esc(item.q)}</strong><small>${esc(item.type || appQuestionType(item))}</small></div></div><div class="standard-question"><b>মূল বইয়ের প্রশ্ন · প্রশ্ন ${esc(item.q)}</b><div class="standard-question-text">${item.t}</div></div><div class="standard-answer-label">সমাধান</div><div class="standard-answer">${solutionAnswerMarkup(item, book.id, itemIndex, true)}</div></article>`).join('')}</main></div></div></div>`;
   }
@@ -278,9 +278,9 @@
     return `<div class="school-app"><div class="admin-wrap admin-stack">${appHeader('<b>সেটিংস</b>')}<div class="admin-card"><div class="subject-heading"><h1>এডমিন সেটিংস</h1><p>লগইন: ${esc(adminSession.id || 'Uzzal')}</p></div><div class="admin-form"><button type="button" class="secondary" onclick="adminLogout()">লগআউট</button></div>${warning}</div>
       <section class="admin-card"><h2>নতুন শ্রেণী যোগ করুন</h2><p>শ্রেণীর নাম লিখে যোগ করুন। যোগ করা শ্রেণী শ্রেণী পেজে দেখা যাবে।</p><form class="admin-form" onsubmit="addAdminClass(event)"><input id="newClassName" placeholder="যেমন: চতুর্থ শ্রেণী" aria-label="নতুন শ্রেণীর নাম"><button type="submit">শ্রেণী যোগ করুন</button></form><div class="admin-list">${classItems}</div></section>
       <section class="admin-card"><h2>বই যোগ করুন</h2><p>শ্রেণী বেছে নিয়ে বইয়ের নাম যোগ করুন। তারপর নিচের ড্রপডাউন থেকে বই বেছে URL সেভ করুন।</p><form class="admin-form" onsubmit="addAdminBook(event)"><select id="bookClassSelect" onchange="setSettingsClass(this.value)">${optionList(classes, selectedClass, 'শ্রেণী নির্বাচন')}</select><input id="newBookName" placeholder="বইয়ের নাম" aria-label="বইয়ের নাম"><button type="submit">বইয়ের নাম যোগ করুন</button></form>
-      ${urlBooks.length ? `<form class="admin-form" onsubmit="saveAdminBookUrl(event)"><select id="urlBookSelect">${optionList(urlBooks, selectedBook, 'বই নির্বাচন')}</select><input id="bookUrlInput" placeholder="বইয়ের Google Drive বা PDF লিংক" aria-label="বইয়ের URL"><button class="warn" type="submit">URL সেভ করুন</button></form>` : '<p class="admin-note">এই শ্রেণীতে বইয়ের নাম যোগ করলে এখানে বইয়ের ড্রপডাউন আসবে।</p>'}
+      ${urlBooks.length ? `<form class="admin-form" onsubmit="saveAdminBookUrl(event)"><select id="urlBookSelect">${optionList(urlBooks, selectedBook, 'বই নির্বাচন')}</select><input id="bookUrlInput" placeholder="বইয়ের ওয়েবসাইট, Google Drive বা PDF লিংক" aria-label="বইয়ের URL"><button class="warn" type="submit">URL সেভ করুন</button></form>` : '<p class="admin-note">এই শ্রেণীতে বইয়ের নাম যোগ করলে এখানে বইয়ের ড্রপডাউন আসবে।</p>'}
       <div class="admin-list">${bookItems || '<p class="admin-note">এই শ্রেণীতে এখনো নতুন বই নেই।</p>'}</div></section>
-      <section class="admin-card"><h2>সমাধান তৈরি করুন</h2><p>শ্রেণী ও বই বেছে নিয়ে বাটনে চাপুন। বইয়ের অনুশীলনী, প্রশ্ন, শূন্যস্থান, নৈর্ব্যত্তিক ও বাড়ির কাজ অধ্যায়ভিত্তিক তুলে নিচে উত্তর তৈরি করে সমাধান বই সংরক্ষণ হবে।</p><div class="admin-form"><select id="solutionClassSelect" onchange="setSolutionClass(this.value)">${optionList(classes, solutionClass, 'শ্রেণী নির্বাচন')}</select><select id="solutionBookSelect">${optionList(solutionBooks, solutionBook, 'বই নির্বাচন')}</select><button type="button" onclick="startSolutionJob(false)">সমাধান তৈরি করুন</button></div>${resume}<div id="solutionProgress"></div></section></div></div>`;
+      <section class="admin-card"><h2>সমাধান তৈরী করুন</h2><p>শ্রেণী ও বই বেছে নিয়ে বাটনে চাপুন। সেভ করা ওয়েবসাইট, Google Drive বা PDF থেকে অনুশীলনী অধ্যায়ভিত্তিক তুলে উত্তরসহ সমাধান বই সংরক্ষণ হবে। লিংকটি সবার জন্য খোলা থাকতে হবে।</p><div class="admin-form"><select id="solutionClassSelect" onchange="setSolutionClass(this.value)">${optionList(classes, solutionClass, 'শ্রেণী নির্বাচন')}</select><select id="solutionBookSelect">${optionList(solutionBooks, solutionBook, 'বই নির্বাচন')}</select><button type="button" onclick="startSolutionJob(false)">সমাধান তৈরী করুন</button></div>${resume}<div id="solutionProgress"></div></section></div></div>`;
   }
 
   window.renderSchoolApp = function () {
@@ -314,13 +314,13 @@
   window.searchPageMarkup = function () {
     const query = appState.searchQuery || '';
     const ready = Boolean(String(query).trim() && appState.classId && appState.answerBookId);
-    return `<div class="school-app"><div class="app-shell search-page">${appHeader('<b>খুঁজুন</b>')}<div class="app-panel"><div class="subject-heading"><h1>প্রশ্ন খুঁজুন</h1><p>প্রথমে শ্রেণী, তারপর সেই শ্রেণীর বই নির্বাচন করুন। প্রশ্ন লিখুন বা ভয়েস দিন, তারপর নতুন প্রশ্ন তৈরি করুন চাপুন।</p></div>${searchFilters()}<div class="book-search-bar"><label class="search-field"><span>🔎</span><input id="bookSearchInput" value="${esc(query)}" oninput="activateGenerateAnswerButtonFromInput(this);setBookSearchQuery(this.value)" onkeyup="activateGenerateAnswerButtonFromInput(this)" placeholder="প্রশ্ন লিখুন…" autocomplete="off" aria-label="প্রশ্ন খুঁজুন"></label><div class="book-search-actions"><button class="voice-search-button" type="button" onclick="startVoiceBookSearch()" aria-label="ভয়েস দিয়ে প্রশ্ন খুঁজুন">🎙️ <span>ভয়েস</span></button><button id="generateAnswerButton" class="generate-answer-button" type="button" onclick="createBookAnswer()" ${ready ? '' : 'disabled'}>নতুন প্রশ্ন তৈরি করুন</button></div></div><p id="voiceSearchStatus" class="voice-search-status">মাইক্রোফোনে অনুমতি দিয়ে প্রশ্ন বলেও তৈরি করতে পারেন।</p><div id="answerBookPicker"></div><div id="generatedAnswerContainer">${generatedBookAnswerMarkup(query)}</div><div id="searchDynamicContent">${searchResultContentMarkup(query)}</div></div></div></div>`;
+    return `<div class="school-app"><div class="app-shell search-page">${appHeader('<b>খুঁজুন</b>')}<div class="app-panel"><div class="subject-heading"><h1>প্রশ্ন খুঁজুন</h1><p>প্রথমে শ্রেণী, তারপর সেই শ্রেণীর বই নির্বাচন করুন। প্রশ্ন লিখুন বা ভয়েস দিন, তারপর নতুন প্রশ্ন তৈরী করুন চাপুন।</p></div>${searchFilters()}<div class="book-search-bar"><label class="search-field"><span>🔎</span><input id="bookSearchInput" value="${esc(query)}" oninput="activateGenerateAnswerButtonFromInput(this);setBookSearchQuery(this.value)" onkeyup="activateGenerateAnswerButtonFromInput(this)" placeholder="প্রশ্ন লিখুন…" autocomplete="off" aria-label="প্রশ্ন খুঁজুন"></label><div class="book-search-actions"><button class="voice-search-button" type="button" onclick="startVoiceBookSearch()" aria-label="ভয়েস দিয়ে প্রশ্ন খুঁজুন">🎙️ <span>ভয়েস</span></button><button id="generateAnswerButton" class="generate-answer-button" type="button" onclick="createBookAnswer()" ${ready ? '' : 'disabled'}>নতুন প্রশ্ন তৈরী করুন</button></div></div><p id="voiceSearchStatus" class="voice-search-status">মাইক্রোফোনে অনুমতি দিয়ে প্রশ্ন বলেও তৈরি করতে পারেন।</p><div id="answerBookPicker"></div><div id="generatedAnswerContainer">${generatedBookAnswerMarkup(query)}</div><div id="searchDynamicContent">${searchResultContentMarkup(query)}</div></div></div></div>`;
   };
   window.searchResultContentMarkup = function (query) {
-    if (!appState.classId || !appState.answerBookId) return '<div class="search-start"><div>📚</div><h2>আগে শ্রেণী ও বই নির্বাচন করুন</h2><p>তারপর প্রশ্ন লিখুন বা ভয়েস দিন এবং “নতুন প্রশ্ন তৈরি করুন” চাপুন।</p></div>';
+    if (!appState.classId || !appState.answerBookId) return '<div class="search-start"><div>📚</div><h2>আগে শ্রেণী ও বই নির্বাচন করুন</h2><p>তারপর প্রশ্ন লিখুন বা ভয়েস দিন এবং “নতুন প্রশ্ন তৈরী করুন” চাপুন।</p></div>';
     if (!query) return '<div class="search-start"><div>🔎</div><h2>প্রশ্ন লিখে অথবা বলে খুঁজুন</h2><p>নির্বাচিত বই থেকে প্রশ্ন লিখলে সংরক্ষিত সমাধানও এখানে দেখা যাবে।</p></div>';
     const results = searchBookAnswers(query, appState.answerBookId);
-    return results.length ? `<div class="search-result-count">${bnNum(results.length)}টি প্রাসঙ্গিক প্রশ্ন ও উত্তর পাওয়া গেছে</div><div class="search-result-list">${results.map(searchResultMarkup).join('')}</div>` : '<div class="search-start"><div>📚</div><h2>সংরক্ষিত সমাধানে এই প্রশ্নের মিল পাওয়া যায়নি</h2><p>“নতুন প্রশ্ন তৈরি করুন” চাপলে নির্বাচিত বই থেকে AI উত্তর তৈরি করবে।</p></div>';
+    return results.length ? `<div class="search-result-count">${bnNum(results.length)}টি প্রাসঙ্গিক প্রশ্ন ও উত্তর পাওয়া গেছে</div><div class="search-result-list">${results.map(searchResultMarkup).join('')}</div>` : '<div class="search-start"><div>📚</div><h2>সংরক্ষিত সমাধানে এই প্রশ্নের মিল পাওয়া যায়নি</h2><p>“নতুন প্রশ্ন তৈরী করুন” চাপলে নির্বাচিত বই থেকে AI উত্তর তৈরি করবে।</p></div>';
   };
   window.updateGenerateAnswerButton = function (query) {
     const button = document.getElementById('generateAnswerButton');
@@ -415,29 +415,18 @@
         return;
       }
       if (!book.link) throw new Error('এই বইয়ের URL সেটিংসে সেভ করা নেই।');
-      setVoiceSearchStatus('বই খোলা হচ্ছে… বড় বই হলে একটু সময় লাগবে।');
-      const opened = await openBookPdf(book.link);
-      const pageCount = Math.min(opened.pageCount, 36);
-      for (let start = 1; start <= pageCount; start += 2) {
-        if (appState.aiRequestId !== requestId) return;
-        const end = Math.min(pageCount, start + 1);
-        setVoiceSearchStatus(`পৃষ্ঠা ${bnNum(start)}–${bnNum(end)} থেকে উত্তর খোঁজা হচ্ছে…`);
-        const pdfBase64 = await slicePagesBase64(opened.doc, start, end);
-        if (!pdfBase64) continue;
-        const data = await postJson('/api/answer-from-book', {
-          action: 'answer-upload',
-          question: query,
-          pdfBase64: pdfBase64,
-          bookTitle: book.title,
-          className: classLabel(appState.classId)
-        });
-        if (data.found && data.answer) {
-          setVoiceSearchStatus('');
-          finishAnswer(requestId, data.answer);
-          return;
-        }
-      }
-      throw new Error('নির্বাচিত বইয়ের প্রথম অংশে এই প্রশ্নের নির্ভরযোগ্য উত্তর পাওয়া যায়নি। সেটিংস থেকে সমাধান তৈরি করলে পুরো বই থেকে উত্তর আরও নির্ভরযোগ্য হবে।');
+      setVoiceSearchStatus('সেভ করা লিংক থেকে বই বা সাইট পড়া হচ্ছে…');
+      const data = await postJson('/api/read-book', {
+        action: 'answer',
+        url: book.link,
+        question: query,
+        bookTitle: book.title,
+        className: classLabel(appState.classId)
+      });
+      if (!data.found || !data.answer) throw new Error('এই লিংকের বই বা সাইটে প্রশ্নের উত্তর পাওয়া যায়নি। লিংকটি সবার জন্য খোলা আছে কিনা দেখুন।');
+      setVoiceSearchStatus('');
+      finishAnswer(requestId, data.answer);
+      return;
     } catch (error) {
       finishAnswer(requestId, '', error.message || 'AI উত্তর তৈরি করা যায়নি।');
     }
@@ -559,7 +548,18 @@
     book.link = link;
     book.preview = previewFromLink(link);
     book.published = true;
-    try { await saveCatalog(); renderSchoolApp(); } catch (error) { alert(error.message); }
+    try {
+      await saveCatalog();
+      let note = 'লিংক সেভ হয়েছে।';
+      try {
+        const probe = await postJson('/api/read-book', { action: 'probe', url: link });
+        note = 'লিংক সেভ হয়েছে। ' + (probe.message || 'AI এই লিংক পড়তে পারবে।');
+      } catch (probeError) {
+        note = 'লিংক সেভ হয়েছে, কিন্তু এখন পড়া যায়নি: ' + (probeError.message || 'লিংক চেক করা যায়নি।');
+      }
+      renderSchoolApp();
+      alert(note);
+    } catch (error) { alert(error.message); }
   };
   window.removeAdminClass = async function (classId) {
     if (!confirm('এই শ্রেণী ও তার নতুন বই মুছে ফেলবেন?')) return;
@@ -675,7 +675,8 @@
     const done = Math.max(0, (job.nextPage || 1) - 1);
     const total = job.pageCount || 1;
     const pct = Math.max(4, Math.min(100, Math.round((done / total) * 100)));
-    return `<div class="solution-progress"><b>${esc(message)}</b><div class="solution-bar"><span style="width:${pct}%"></span></div><small>পৃষ্ঠা ${bnNum(Math.min(done + 1, total))} / ${bnNum(total)} · এ পর্যন্ত ${bnNum((job.items || []).length)}টি প্রশ্ন</small><div style="margin-top:8px"><button type="button" class="admin-inline-button secondary" onclick="cancelSolutionJob()">থামান</button></div></div>`;
+    const unit = job.kind === 'html' ? 'অংশ' : 'পৃষ্ঠা';
+    return `<div class="solution-progress"><b>${esc(message)}</b><div class="solution-bar"><span style="width:${pct}%"></span></div><small>${unit} ${bnNum(Math.min(done + 1, total))} / ${bnNum(total)} · এ পর্যন্ত ${bnNum((job.items || []).length)}টি প্রশ্ন</small><div style="margin-top:8px"><button type="button" class="admin-inline-button secondary" onclick="cancelSolutionJob()">থামান</button></div></div>`;
   }
   async function solveUploaded(job, start, end, doc) {
     const sendSlice = async (from, to) => {
@@ -704,6 +705,7 @@
   }
   window.cancelSolutionJob = function () { solutionCancel = true; };
   window.resumeSolutionJob = function () { startSolutionJob(true); };
+  let solutionChunks = [];
   window.startSolutionJob = async function (resume) {
     if (!adminSession.loggedIn) return alert('আগে লগইন করুন।');
     let job = resume ? readJob() : null;
@@ -712,34 +714,56 @@
       const bookId = document.getElementById('solutionBookSelect')?.value || '';
       const book = findBook(bookId) || appBook(bookId);
       if (!classId || !book || !book.link) return alert('লিংকসহ একটি বই নির্বাচন করুন।');
-      if (!confirm('সমাধান তৈরি হতে কয়েক মিনিট লাগতে পারে। পেজ বন্ধ করবেন না। কম্পিউটারে করা ভালো। চালু করবেন?')) return;
-      job = { bookId: bookId, classId: classId, url: book.link, title: book.title, className: classLabel(classId), pageCount: 0, nextPage: 1, items: [] };
+      if (!confirm('সমাধান তৈরী হতে কয়েক মিনিট লাগতে পারে। পেজ বন্ধ করবেন না। কম্পিউটারে করা ভালো। চালু করবেন?')) return;
+      job = { bookId: bookId, classId: classId, url: book.link, title: book.title, className: classLabel(classId), kind: '', pageCount: 0, nextPage: 1, items: [], fileUri: '' };
     }
     solutionCancel = false;
     const box = document.getElementById('solutionProgress');
-    if (box) box.innerHTML = '<div class="solution-progress">বই খোলা হচ্ছে…</div>';
-    let opened;
+    if (box) box.innerHTML = '<div class="solution-progress">সেভ করা লিংক থেকে বই পড়া হচ্ছে…</div>';
     try {
-      opened = await openBookPdf(job.url);
-      job.pageCount = Math.min(opened.pageCount, 220);
+      const prep = await postJson('/api/read-book', { action: 'prepare', url: job.url, bookTitle: job.title, className: job.className });
+      job.kind = prep.kind || 'pdf';
+      if (job.kind === 'html') {
+        solutionChunks = prep.chunks || [];
+        job.pageCount = solutionChunks.length;
+      } else {
+        solutionChunks = [];
+        job.pageCount = Math.min(prep.pageCount || 40, 220);
+        job.fileUri = prep.fileUri || job.fileUri || '';
+        job.mimeType = prep.mimeType || 'application/pdf';
+      }
+      if (!job.pageCount) throw new Error('এই লিংক থেকে পড়ার মতো লেখা পাওয়া যায়নি।');
       if (job.nextPage < 1) job.nextPage = 1;
+      if (job.nextPage > job.pageCount) job.nextPage = 1;
     } catch (error) {
       if (box) box.innerHTML = `<p class="admin-note error">${esc(error.message)}</p>`;
       return;
     }
+    let emptyStreak = 0;
     while (job.nextPage <= job.pageCount) {
       if (solutionCancel) {
         writeJob(job);
-        if (box) box.innerHTML = '<p class="admin-note warn">সমাধান তৈরি থামানো হয়েছে। পরে “চালিয়ে যান” চাপতে পারবেন।</p>';
+        if (box) box.innerHTML = '<p class="admin-note warn">সমাধান তৈরী থামানো হয়েছে। পরে “চালিয়ে যান” চাপতে পারবেন।</p>';
         return;
       }
-      const end = Math.min(job.pageCount, job.nextPage + 1);
-      if (box) box.innerHTML = progressHtml(job, `${job.title} থেকে প্রশ্ন ও উত্তর তৈরি হচ্ছে…`);
+      if (box) box.innerHTML = progressHtml(job, `${job.title} থেকে প্রশ্ন ও উত্তর তৈরী হচ্ছে…`);
       try {
-        const data = await solveUploaded(job, job.nextPage, end, opened.doc);
+        let data;
+        if (job.kind === 'html') {
+          const text = solutionChunks[job.nextPage - 1] || '';
+          data = await postJson('/api/read-book', { action: 'solve-text', url: job.url, text: text, bookTitle: job.title, className: job.className, part: job.nextPage });
+          job.nextPage += 1;
+        } else {
+          const end = Math.min(job.pageCount, job.nextPage + 3);
+          data = await postJson('/api/read-book', { action: 'solve-pdf', url: job.url, fileUri: job.fileUri || '', mimeType: job.mimeType || 'application/pdf', startPage: job.nextPage, endPage: end, bookTitle: job.title, className: job.className });
+          job.nextPage = end + 1;
+        }
+        const found = (data.items || []).length;
+        emptyStreak = found ? 0 : emptyStreak + 1;
         job.items = dedupeItems((job.items || []).concat(data.items || []));
-        job.nextPage = end + 1;
         writeJob(job);
+        if (emptyStreak >= 2 && job.nextPage > 16 && job.items.length) break;
+        if (emptyStreak >= 3 && job.nextPage > 24 && !job.items.length) break;
       } catch (error) {
         writeJob(job);
         if (box) box.innerHTML = `<p class="admin-note error">${esc(error.message)} এ পর্যন্ত ${bnNum((job.items || []).length)}টি প্রশ্ন রাখা আছে।</p>`;
@@ -749,7 +773,7 @@
     const records = recordsFromItems(job.items || []);
     if (!records.length) {
       writeJob(null);
-      if (box) box.innerHTML = '<p class="admin-note error">বই থেকে কোনো প্রশ্ন পাওয়া যায়নি। লিংকটি পাবলিক PDF কিনা দেখুন, অথবা Vercel-এ GEMINI_API_KEY সেট আছে কিনা দেখুন।</p>';
+      if (box) box.innerHTML = '<p class="admin-note error">এই লিংক থেকে কোনো প্রশ্ন পাওয়া যায়নি। লিংকটি সবার জন্য খোলা আছে কিনা দেখুন, অথবা Vercel-এ GEMINI_API_KEY সেট আছে কিনা দেখুন।</p>';
       return;
     }
     catalog.solutions = Object.assign({}, catalog.solutions || {}, { [job.bookId]: records });
@@ -759,7 +783,7 @@
       if (box) box.innerHTML = `<p class="admin-note">${bnNum(records.length)}টি প্রশ্নসহ সমাধান বই সংরক্ষণ হয়েছে। শ্রেণী পেজের সমাধানে এখন এটি দেখা যাবে।</p>`;
     } catch (error) {
       writeJob(job);
-      if (box) box.innerHTML = `<p class="admin-note error">সমাধান তৈরি হয়েছে, কিন্তু সেভ হয়নি: ${esc(error.message)}</p>`;
+      if (box) box.innerHTML = `<p class="admin-note error">সমাধান তৈরী হয়েছে, কিন্তু সেভ হয়নি: ${esc(error.message)}</p>`;
     }
   };
 
