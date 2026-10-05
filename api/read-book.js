@@ -163,7 +163,7 @@ function sameSiteLinks(html, base) {
   const seen = new Set();
   const re = /href\s*=\s*["']([^"'#]+)["']/gi;
   let match;
-  while ((match = re.exec(String(html))) && found.length < 6) {
+  while ((match = re.exec(String(html))) && found.length < 12) {
     let href;
     try { href = new URL(match[1], base); } catch (_) { continue; }
     if (href.hostname !== host || (href.protocol !== 'https:' && href.protocol !== 'http:')) continue;
@@ -209,7 +209,7 @@ async function loadSource(raw) {
       let plain = htmlToText(lastHtml);
       if (plain.length > 80) {
         plain = await expandShortPage(lastHtml, result.finalUrl || url, plain);
-        return { kind: 'html', text: plain.slice(0, 240000), title: pageTitle(lastHtml) };
+        return { kind: 'html', text: plain.slice(0, 240000), title: pageTitle(lastHtml), links: sameSiteLinks(lastHtml, result.finalUrl || url).slice(0, 8) };
       }
     } else if (text.trim().length > 80) {
       return { kind: 'html', text: text.trim().slice(0, 240000), title: '' };
@@ -223,18 +223,22 @@ function chunksOf(text) {
   for (let i = 0; i < text.length && chunks.length < 36; i += size - 400) chunks.push(text.slice(i, i + size));
   return chunks;
 }
+function questionTerms(question) {
+  return String(question || '').split(/\s+/).map((word) => word.trim()).filter((word) => word.length > 1).slice(0, 12);
+}
+function scoreText(text, terms) {
+  return terms.reduce((sum, term) => sum + (String(text).includes(term) ? 1 : 0), 0);
+}
+function textWindows(text, question) {
+  const full = String(text || '');
+  const terms = questionTerms(question);
+  const size = 11000;
+  const windows = [];
+  for (let i = 0; i < full.length && windows.length < 12; i += size - 600) windows.push(full.slice(i, i + size));
+  return windows.sort((a, b) => scoreText(b, terms) - scoreText(a, terms));
+}
 function relevantText(text, question) {
-  const terms = String(question || '').split(/\s+/).map((word) => word.trim()).filter((word) => word.length > 1).slice(0, 12);
-  const parts = String(text).split(/\n+/);
-  const ranked = parts.map((part) => ({ part, score: terms.reduce((sum, term) => sum + (part.includes(term) ? 1 : 0), 0) }));
-  ranked.sort((a, b) => b.score - a.score);
-  let out = '';
-  for (const row of ranked) {
-    if (!row.score && out.length > 5000) break;
-    if (out.length + row.part.length > 28000) continue;
-    out += row.part + '\n';
-  }
-  return out.trim() || String(text).slice(0, 28000);
+  return textWindows(text, question).slice(0, 2).join('\n\n').slice(0, 22000) || String(text || '').slice(0, 22000);
 }
 function parseJsonLoose(text) {
   const trimmed = String(text || '').trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
@@ -246,16 +250,29 @@ function parseJsonLoose(text) {
   }
   return null;
 }
-async function gemini(parts, maxOutputTokens) {
+function interpretAnswer(raw) {
+  const parsed = parseJsonLoose(raw);
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    const answer = String(parsed.answer || '').trim();
+    if (parsed.found === false && answer.length < 30) return { found: false, answer: '' };
+    if (answer.length > 8) return { found: true, answer: answer.slice(0, 4000) };
+  }
+  const text = String(raw || '').trim();
+  if (text.length > 25) return { found: true, answer: text.slice(0, 4000) };
+  return { found: false, answer: '' };
+}
+async function gemini(parts, maxOutputTokens, extra) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw Object.assign(new Error('Vercel-এ GEMINI_API_KEY সেট করা নেই, তাই AI বই পড়তে পারছে না।'), { status: 503 });
   const models = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash'];
   let last = 'Gemini উত্তর দিতে পারেনি।';
   for (const model of models) {
+    const payload = { contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, maxOutputTokens: maxOutputTokens || 1200 } };
+    if (extra) Object.assign(payload, extra);
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(apiKey), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, maxOutputTokens: maxOutputTokens || 1200 } })
+      body: JSON.stringify(payload)
     });
     const data = await response.json().catch(() => ({}));
     if (response.ok) {
@@ -263,9 +280,20 @@ async function gemini(parts, maxOutputTokens) {
       if (text) return text;
     }
     last = response.status === 429 ? 'Gemini এখন ব্যস্ত। এক মিনিট পরে আবার চেষ্টা করুন।' : (data.error?.message || last);
+    if (extra && response.status === 400) continue;
     if (![404, 429, 503].includes(response.status)) break;
   }
   throw Object.assign(new Error(last), { status: 502 });
+}
+async function answerByUrlContext(urls, question, bookTitle, className) {
+  const list = urls.filter(Boolean).slice(0, 8);
+  if (!list.length) return { found: false, answer: '' };
+  const prompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '।\nশিক্ষার্থীর প্রশ্ন: ' + question + '\nনিচের লিংকগুলো খুলে বই বা সাইটের পাঠ পড়ে উত্তর দাও। উত্তর ওই লেখার ওপর ভিত্তি করে দাও। বিষয়টি পাঠে থাকলে found=true। একেবারে না থাকলে found=false। নিজের মন থেকে গল্প বানিয়ে উত্তর দিবে না।\nলিংক:\n' + list.join('\n') + '\nশুধু JSON: {"found":true,"answer":"উত্তর"}';
+  try {
+    return interpretAnswer(await gemini([{ text: prompt }], 1400, { tools: [{ url_context: {} }] }));
+  } catch (_) {
+    return { found: false, answer: '' };
+  }
 }
 async function uploadPdf(bytes) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -338,10 +366,15 @@ module.exports = async function handler(req, res) {
     const url = assertPublicUrl(body.url || '');
     if (action === 'probe') {
       const source = await cachedSource(url);
+      const chars = source.text ? source.text.length : 0;
+      const preview = source.kind === 'html' ? source.text.replace(/\s+/g, ' ').slice(0, 180) : '';
+      const weak = source.kind === 'html' && chars < 400;
       const message = source.kind === 'pdf'
-        ? 'PDF পাওয়া গেছে। AI সার্ভার থেকে এই বই পড়তে পারবে।'
-        : 'ওয়েবপেজের লেখা পাওয়া গেছে। AI এই সাইট থেকে পড়তে পারবে।';
-      return send(res, 200, { ok: true, kind: source.kind, pages: source.pageCount || 0, chars: source.text ? source.text.length : 0, title: source.title || '', message });
+        ? 'PDF পাওয়া গেছে। AI এই বই পড়ে উত্তর দিতে পারবে।'
+        : weak
+          ? 'লিংক খোলা গেছে, কিন্তু পড়ার মতো লেখা খুব কম। বইয়ের যে পাতায় পাঠ বা অনুশীলনী আছে সেই লিংক দিন। লগইন-ওয়ালা সাইট পড়া যায় না।'
+          : 'সাইটের লেখা পাওয়া গেছে। AI এই লিংক থেকে উত্তর দিতে পারবে।';
+      return send(res, 200, { ok: !weak, kind: source.kind, pages: source.pageCount || 0, chars, title: source.title || '', preview, message });
     }
     const bookTitle = String(body.bookTitle || 'বই').slice(0, 80);
     const className = String(body.className || 'শ্রেণী').slice(0, 60);
@@ -385,16 +418,24 @@ module.exports = async function handler(req, res) {
     const question = String(body.question || '').trim().slice(0, 1200);
     if (!question) return send(res, 400, { error: 'প্রশ্ন লিখুন।' });
     const source = await cachedSource(url);
-    let parts;
     if (source.kind === 'html') {
-      parts = [{ text: 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '।\nশিক্ষার্থীর প্রশ্ন: ' + question + '\nনিচের সাইটের লেখা থেকে উত্তর দাও। লেখায় না থাকলে found=false দাও। শুধু JSON: {"found":true,"answer":"উত্তর"}\n\nসাইটের লেখা:\n' + relevantText(source.text, question) }];
-    } else {
-      const uploaded = await uploadPdf(source.bytes);
-      parts = pdfParts(uploaded, 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '।\nশিক্ষার্থীর প্রশ্ন: ' + question + '\nসংযুক্ত বই থেকে সঠিক উত্তর দাও। বইয়ে না থাকলে found=false দাও। শুধু JSON: {"found":true,"answer":"উত্তর"}');
+      const pageUrls = [url].concat(source.links || []).filter((item, index, list) => list.indexOf(item) === index).slice(0, 8);
+      let result = await answerByUrlContext(pageUrls, question, bookTitle, className);
+      if (!result.found) {
+        const windows = textWindows(source.text, question);
+        for (let i = 0; i < windows.length && i < 3 && !result.found; i += 1) {
+          const prompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '।\nশিক্ষার্থীর প্রশ্ন: ' + question + '\nনিচের পাঠ থেকে উত্তর দাও। বিষয়টি পাঠে থাকলে found=true। একেবারে না থাকলে found=false। নিজের মন থেকে উত্তর বানাবে না। শুধু JSON: {"found":true,"answer":"উত্তর"}\n\nপাঠ:\n' + windows[i];
+          try { result = interpretAnswer(await gemini([{ text: prompt }], 1200)); } catch (_) {}
+        }
+      }
+      if (!result.found) return send(res, 200, { found: false, answer: '', error: 'এই লিংকের পাঠে প্রশ্নের উত্তর পাওয়া যায়নি। বইয়ের যে পাতায় পাঠ আছে সেই লিংক দিন।' });
+      return send(res, 200, result);
     }
-    const parsed = parseJsonLoose(await gemini(parts, 900)) || {};
-    const answer = String(parsed.answer || '').trim();
-    return send(res, 200, { found: parsed.found === true && Boolean(answer), answer });
+    const uploaded = await uploadPdf(source.bytes);
+    const pdfPrompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '।\nশিক্ষার্থীর প্রশ্ন: ' + question + '\nসংযুক্ত বই পড়ে উত্তর দাও। বিষয়টি বইয়ে থাকলে found=true। একেবারে না থাকলে found=false। নিজের মন থেকে উত্তর বানাবে না। শুধু JSON: {"found":true,"answer":"উত্তর"}';
+    const result = interpretAnswer(await gemini(pdfParts(uploaded, pdfPrompt), 1400));
+    if (!result.found) return send(res, 200, { found: false, answer: '', error: 'এই PDF-এ প্রশ্নের উত্তর পাওয়া যায়নি।' });
+    return send(res, 200, result);
   } catch (error) {
     return send(res, error.status || 502, { error: error.message || 'বই পড়া যায়নি।' });
   }
