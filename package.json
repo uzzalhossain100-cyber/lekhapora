@@ -1,8 +1,0 @@
-{
-  "name": "amarboi",
-  "private": true,
-  "description": "AmarBoi — শ্রেণিভিত্তিক পাঠ্যবই ও সমাধান",
-  "dependencies": {
-    "pdf-lib": "^1.17.1"
-  }
-}
