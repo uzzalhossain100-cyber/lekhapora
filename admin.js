@@ -404,14 +404,27 @@
     const requestId = beginAnswer(book, query);
     try {
       if (!book.link) throw new Error('এই বইয়ের URL সেটিংসে সেভ করা নেই।');
-      setVoiceSearchStatus('সেভ করা লিংক থেকে বই বা সাইট পড়া হচ্ছে…');
-      const data = await postJson('/api/read-book', {
-        action: 'answer',
+      setVoiceSearchStatus('সেভ করা লিংক থেকে বই খোলা হচ্ছে… বড় PDF হলে একটু সময় লাগবে।');
+      let data = await postJson('/api/read-book', {
+        action: 'open',
         url: book.link,
         question: query,
         bookTitle: book.title,
         className: classLabel(appState.classId)
       });
+      if (data.fileUri && !data.answer) {
+        setVoiceSearchStatus('বইয়ের পাতা পড়ে উত্তর খোঁজা হচ্ছে…');
+        data = await postJson('/api/read-book', {
+          action: 'answer',
+          url: book.link,
+          fileUri: data.fileUri,
+          mimeType: data.mimeType || 'application/pdf',
+          fileName: data.fileName || '',
+          question: query,
+          bookTitle: book.title,
+          className: classLabel(appState.classId)
+        });
+      }
       if (data.found && data.answer) {
         setVoiceSearchStatus('');
         finishAnswer(requestId, data.answer);
