@@ -1,5 +1,9 @@
 {
   "cleanUrls": true,
+  "functions": {
+    "api/solution-job.js": { "maxDuration": 60 },
+    "api/answer-from-book.js": { "maxDuration": 60 }
+  },
   "headers": [
     {
       "source": "/(.*)",
