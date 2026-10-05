@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const DEFAULT_ADMIN_ID = 'Uzzal';
 const DEFAULT_PASSWORD_HASH = 'fc949fd65dfe32c5331ed7bb9d1aac30e9c0eeee1400c0345c44183dc70887d6';
 const COOKIE = 'amarboi_admin';
-const MAX_PDF = 32 * 1024 * 1024;
+const MAX_PDF = 48 * 1024 * 1024;
 const hits = new Map();
 
 function send(res, status, payload) {
@@ -132,24 +132,40 @@ async function readLimited(response, max) {
   try { await reader.cancel(); } catch (_) {}
   return Buffer.concat(chunks).slice(0, max);
 }
-async function fetchOne(url, max) {
+async function fetchOne(url, max, cookie) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 45000);
+  const timer = setTimeout(() => controller.abort(), 40000);
   try {
-    const response = await fetch(url, {
-      redirect: 'follow',
-      signal: controller.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AmarBoi/1.0)', Accept: 'application/pdf,text/html,text/plain,*/*' }
-    });
+    const headers = { 'User-Agent': 'Mozilla/5.0 (compatible; AmarBoi/1.0)', Accept: 'application/pdf,text/html,text/plain,*/*' };
+    if (cookie) headers.Cookie = cookie;
+    const response = await fetch(url, { redirect: 'follow', signal: controller.signal, headers });
     if (!response.ok) return null;
     try { assertPublicUrl(response.url || url); } catch (_) { return null; }
     const buf = await readLimited(response, max);
-    return { buf, type: response.headers.get('content-type') || '', finalUrl: response.url || url };
+    const total = Number(response.headers.get('content-length') || buf.length);
+    const setCookie = typeof response.headers.getSetCookie === 'function' ? response.headers.getSetCookie() : [];
+    const nextCookie = setCookie.map((item) => item.split(';')[0]).filter(Boolean).join('; ');
+    return { buf, type: response.headers.get('content-type') || '', finalUrl: response.url || url, total, cookie: nextCookie || cookie || '' };
   } catch (_) {
     return null;
   } finally {
     clearTimeout(timer);
   }
+}
+function sharePdfFromHtml(html, pageUrl) {
+  const source = String(html || '');
+  const direct = source.match(/name="downloadURL"[^>]*value="([^"]+)"/i) || source.match(/id="downloadURL"[^>]*value="([^"]+)"/i);
+  const filename = (source.match(/name="filename"[^>]*value="([^"]+)"/i) || [])[1] || '';
+  const mime = (source.match(/name="mimetype"[^>]*value="([^"]+)"/i) || [])[1] || '';
+  let download = direct ? direct[1] : '';
+  if (!download) {
+    const href = source.match(/href="([^"]+\/download)"/i);
+    if (href && /pdf/i.test(source)) download = href[1];
+  }
+  if (!download) return null;
+  if (mime && !/pdf/i.test(mime) && !/pdf/i.test(filename)) return null;
+  try { download = new URL(download, pageUrl).toString(); } catch (_) { return null; }
+  return { url: download, filename: filename.slice(0, 180), mime: mime || 'application/pdf' };
 }
 function confirmUrl(html, current) {
   const id = driveId(current) || (String(html).match(/name="id"\s+value="([^"]+)"/) || [])[1] || '';
@@ -200,6 +216,14 @@ async function loadSource(raw) {
     const text = result.buf.toString('utf8');
     if (head.includes('<html') || head.includes('<!doctype') || (result.type.includes('html'))) {
       lastHtml = text;
+      const share = sharePdfFromHtml(text, result.finalUrl || url);
+      if (share) {
+        const file = await fetchOne(share.url, MAX_PDF, result.cookie);
+        if (file && looksPdf(file.buf)) {
+          if (file.total > file.buf.length) throw Object.assign(new Error('বইটি ৪৮ মেগাবাইটের বেশি, তাই পুরোটা পড়া যায়নি।'), { status: 422 });
+          return { kind: 'pdf', bytes: file.buf, filename: share.filename, pageCount: file.buf.length > 8000000 ? 0 : (countPdfPages(file.buf) || 40) };
+        }
+      }
       const next = confirmUrl(text, url);
       if (next && next !== url) {
         const retry = await fetchOne(next, MAX_PDF);
@@ -215,7 +239,7 @@ async function loadSource(raw) {
       return { kind: 'html', text: text.trim().slice(0, 240000), title: '' };
     }
   }
-  throw Object.assign(new Error('এই লিংক থেকে বই পড়া যায়নি। লিংকটি সবার জন্য খোলা আছে কিনা দেখুন। লগইন-ওয়ালা বা স্ক্যান করা সাইট হলে AI পড়তে পারে না।'), { status: 422 });
+  throw Object.assign(new Error('এই লিংক থেকে বই পড়া যায়নি। লিংকটি সবার জন্য খোলা আছে কিনা দেখুন। লগইন-ওয়ালা সাইট পড়া যায় না।'), { status: 422 });
 }
 function chunksOf(text) {
   const size = 7000;
@@ -314,13 +338,13 @@ async function uploadPdf(bytes) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.file) throw Object.assign(new Error(data.error?.message || 'বড় PDF AI-তে পাঠানো যায়নি।'), { status: 502 });
   let file = data.file;
-  for (let i = 0; i < 6 && file.state && file.state !== 'ACTIVE'; i += 1) {
+  for (let i = 0; i < 10 && file.state && file.state !== 'ACTIVE'; i += 1) {
     if (file.state === 'FAILED') throw Object.assign(new Error('AI এই PDF পড়তে পারেনি।'), { status: 422 });
     await new Promise((resolve) => setTimeout(resolve, 1500));
     const check = await fetch('https://generativelanguage.googleapis.com/v1beta/' + file.name + '?key=' + encodeURIComponent(apiKey));
     file = await check.json();
   }
-  return { inline: false, fileUri: file.uri, mimeType: file.mimeType || 'application/pdf' };
+  return { inline: false, fileUri: file.uri, mimeType: file.mimeType || 'application/pdf', name: file.name || '' };
 }
 function pdfParts(prepared, extraText) {
   if (prepared.inline) return [{ inline_data: { mime_type: 'application/pdf', data: prepared.bytes.toString('base64') } }, { text: extraText }];
@@ -343,9 +367,42 @@ function cleanItems(raw, fallbackPage) {
   }).filter(Boolean);
 }
 const sourceCache = new Map();
+const uploadedCache = new Map();
 function remember(url, source) {
+  if (source && source.bytes && source.bytes.length > 8 * 1024 * 1024) return;
   sourceCache.set(url, { source, at: Date.now() });
   if (sourceCache.size > 2) sourceCache.delete(sourceCache.keys().next().value);
+}
+async function inspectLink(raw) {
+  const urls = candidateUrls(raw);
+  for (const url of urls) {
+    const result = await fetchOne(url, 300000);
+    if (!result) continue;
+    if (looksPdf(result.buf) || /pdf/i.test(result.type)) return { kind: 'pdf', filename: '', downloadUrl: result.finalUrl || url };
+    const share = sharePdfFromHtml(result.buf.toString('utf8'), result.finalUrl || url);
+    if (share) return { kind: 'pdf', filename: share.filename, downloadUrl: share.url };
+    const plain = htmlToText(result.buf.toString('utf8'));
+    if (plain.length > 80) return { kind: 'html', text: plain, title: pageTitle(result.buf.toString('utf8')) };
+  }
+  throw Object.assign(new Error('এই লিংক থেকে বই পড়া যায়নি। লিংকটি সবার জন্য খোলা আছে কিনা দেখুন।'), { status: 422 });
+}
+function pdfAnswerPrompt(className, bookTitle, question) {
+  return 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '.\nশিক্ষার্থীর প্রশ্ন: ' + question + '\nসংযুক্ত PDF-এর সব পাতা দেখো। স্ক্যান করা পাতা হলে ছবি পড়ে উত্তর দাও। বইয়ের ভাষায় সংক্ষিপ্ত সঠিক উত্তর দাও। বিষয়টি বইয়ে থাকলে found=true। না থাকলে found=false। নিজের মন থেকে উত্তর বানাবে না। শুধু JSON: {"found":true,"answer":"উত্তর"}';
+}
+async function waitUntilActive(name) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || !name) return;
+  for (let i = 0; i < 12; i += 1) {
+    const check = await fetch('https://generativelanguage.googleapis.com/v1beta/' + name + '?key=' + encodeURIComponent(apiKey));
+    const file = await check.json().catch(() => ({}));
+    if (!file.state || file.state === 'ACTIVE') return;
+    if (file.state === 'FAILED') throw Object.assign(new Error('AI এই PDF পড়তে পারেনি।'), { status: 422 });
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+}
+async function answerPdf(uploaded, className, bookTitle, question) {
+  await waitUntilActive(uploaded.name);
+  return interpretAnswer(await gemini(pdfParts(uploaded, pdfAnswerPrompt(className, bookTitle, question)), 1400));
 }
 async function cachedSource(url) {
   const hit = sourceCache.get(url);
@@ -362,15 +419,15 @@ module.exports = async function handler(req, res) {
     const body = await readBody(req);
     const action = String(body.action || 'probe');
     const admin = readSession(req);
-    if (action !== 'answer' && !admin) return send(res, 401, { error: 'আগে এডমিন লগইন করুন।' });
+    if (!['answer', 'open'].includes(action) && !admin) return send(res, 401, { error: 'আগে এডমিন লগইন করুন।' });
     const url = assertPublicUrl(body.url || '');
     if (action === 'probe') {
-      const source = await cachedSource(url);
+      const source = await inspectLink(url);
       const chars = source.text ? source.text.length : 0;
       const preview = source.kind === 'html' ? source.text.replace(/\s+/g, ' ').slice(0, 180) : '';
       const weak = source.kind === 'html' && chars < 400;
       const message = source.kind === 'pdf'
-        ? 'PDF পাওয়া গেছে। AI এই বই পড়ে উত্তর দিতে পারবে।'
+        ? 'PDF পাওয়া গেছে' + (source.filename ? ': ' + source.filename : '') + '। AI এই বই পড়ে উত্তর দিতে পারবে।'
         : weak
           ? 'লিংক খোলা গেছে, কিন্তু পড়ার মতো লেখা খুব কম। বইয়ের যে পাতায় পাঠ বা অনুশীলনী আছে সেই লিংক দিন। লগইন-ওয়ালা সাইট পড়া যায় না।'
           : 'সাইটের লেখা পাওয়া গেছে। AI এই লিংক থেকে উত্তর দিতে পারবে।';
@@ -393,6 +450,37 @@ module.exports = async function handler(req, res) {
         pageCount: source.pageCount || 40,
         title: bookTitle
       });
+    }
+    if (action === 'open') {
+      const question = String(body.question || '').trim().slice(0, 1200);
+      const source = await loadSource(url);
+      if (source.kind === 'html') {
+        if (!question) return send(res, 400, { error: 'প্রশ্ন লিখুন।' });
+        const pageUrls = [url].concat(source.links || []).filter((item, index, list) => list.indexOf(item) === index).slice(0, 8);
+        let result = await answerByUrlContext(pageUrls, question, bookTitle, className);
+        if (!result.found) {
+          const windows = textWindows(source.text, question);
+          for (let i = 0; i < windows.length && i < 3 && !result.found; i += 1) {
+            const prompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '।\nশিক্ষার্থীর প্রশ্ন: ' + question + '\nনিচের পাঠ থেকে উত্তর দাও। বিষয়টি পাঠে থাকলে found=true। একেবারে না থাকলে found=false। নিজের মন থেকে উত্তর বানাবে না। শুধু JSON: {"found":true,"answer":"উত্তর"}\n\nপাঠ:\n' + windows[i];
+            try { result = interpretAnswer(await gemini([{ text: prompt }], 1200)); } catch (_) {}
+          }
+        }
+        if (!result.found) return send(res, 200, { found: false, answer: '', error: 'এই লিংকের পাঠে প্রশ্নের উত্তর পাওয়া যায়নি।' });
+        return send(res, 200, result);
+      }
+      const cached = uploadedCache.get(url);
+      if (cached && Date.now() - cached.at < 30 * 60 * 1000) {
+        return send(res, 200, { kind: 'pdf', fileUri: cached.fileUri, mimeType: cached.mimeType, fileName: cached.name || '', filename: source.filename || '' });
+      }
+      const uploaded = await uploadPdf(source.bytes);
+      if (!uploaded.inline && uploaded.fileUri) {
+        uploadedCache.set(url, { fileUri: uploaded.fileUri, mimeType: uploaded.mimeType || 'application/pdf', name: uploaded.name || '', at: Date.now() });
+        return send(res, 200, { kind: 'pdf', fileUri: uploaded.fileUri, mimeType: uploaded.mimeType || 'application/pdf', fileName: uploaded.name || '', filename: source.filename || '' });
+      }
+      if (!question) return send(res, 400, { error: 'প্রশ্ন লিখুন।' });
+      const small = await answerPdf(uploaded, className, bookTitle, question);
+      if (!small.found) return send(res, 200, { found: false, answer: '', error: 'এই PDF-এ প্রশ্নের উত্তর পাওয়া যায়নি।' });
+      return send(res, 200, small);
     }
     if (action === 'solve-text') {
       const text = String(body.text || '').slice(0, 9000);
@@ -417,6 +505,11 @@ module.exports = async function handler(req, res) {
     }
     const question = String(body.question || '').trim().slice(0, 1200);
     if (!question) return send(res, 400, { error: 'প্রশ্ন লিখুন।' });
+    if (body.fileUri) {
+      const result = await answerPdf({ inline: false, fileUri: String(body.fileUri), mimeType: String(body.mimeType || 'application/pdf'), name: String(body.fileName || '') }, className, bookTitle, question);
+      if (!result.found) return send(res, 200, { found: false, answer: '', error: 'এই PDF-এ প্রশ্নের উত্তর পাওয়া যায়নি।' });
+      return send(res, 200, result);
+    }
     const source = await cachedSource(url);
     if (source.kind === 'html') {
       const pageUrls = [url].concat(source.links || []).filter((item, index, list) => list.indexOf(item) === index).slice(0, 8);
@@ -432,8 +525,7 @@ module.exports = async function handler(req, res) {
       return send(res, 200, result);
     }
     const uploaded = await uploadPdf(source.bytes);
-    const pdfPrompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '।\nশিক্ষার্থীর প্রশ্ন: ' + question + '\nসংযুক্ত বই পড়ে উত্তর দাও। বিষয়টি বইয়ে থাকলে found=true। একেবারে না থাকলে found=false। নিজের মন থেকে উত্তর বানাবে না। শুধু JSON: {"found":true,"answer":"উত্তর"}';
-    const result = interpretAnswer(await gemini(pdfParts(uploaded, pdfPrompt), 1400));
+    const result = await answerPdf(uploaded, className, bookTitle, question);
     if (!result.found) return send(res, 200, { found: false, answer: '', error: 'এই PDF-এ প্রশ্নের উত্তর পাওয়া যায়নি।' });
     return send(res, 200, result);
   } catch (error) {
