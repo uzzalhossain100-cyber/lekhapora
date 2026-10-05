@@ -14,6 +14,7 @@
   const originalAppRouteHash = window.appRouteHash;
   const originalAppHome = window.appHome;
   let catalog = { version: 1, classes: [], books: [], solutions: {} };
+  let localFiles = {};
   let canPersist = false;
   let lastWarning = '';
   let adminSession = { checked: false, loggedIn: false, id: '' };
@@ -86,7 +87,7 @@
     const publishedOnly = Boolean(opts && opts.publishedOnly);
     const builtin = classId === 'class-3' ? builtinBooks() : [];
     const custom = (catalog.books || []).filter((book) => book.classId === classId && !BUILTIN_IDS.has(book.id));
-    return builtin.concat(custom).filter((book) => !publishedOnly || book.builtin || book.link);
+    return builtin.concat(custom).filter((book) => !publishedOnly || book.builtin || book.link || book.fileName || localFiles[book.id]);
   }
   function findBook(id) {
     return booksForClass('class-3').concat(catalog.books || []).find((book) => book.id === id) || null;
@@ -273,13 +274,15 @@
     const solutionBook = solutionBooks.some((book) => book.id === appState.solutionBookId) ? appState.solutionBookId : (solutionBooks[0]?.id || '');
     const warning = lastWarning ? `<p class="admin-note warn">${esc(lastWarning)}</p>` : (canPersist ? '<p class="admin-note">সেভ করলে শ্রেণী ও বই সবার লাইভ সাইটে দেখা যাবে।</p>' : '<p class="admin-note warn">লাইভ সাইটে সবার জন্য সেভ করতে Vercel Environment Variable-এ GITHUB_TOKEN যোগ করুন। টোকেনে এই রিপোতে লেখার অনুমতি থাকতে হবে।</p>');
     const classItems = classes.map((item) => `<div class="admin-list-item"><div><b>${esc(item.name)}</b><small>${item.builtin ? 'আগ থেকে থাকা শ্রেণী' : 'নতুন শ্রেণী'} · ${bnNum(booksForClass(item.id, { publishedOnly: true }).length)}টি বই</small></div>${item.builtin ? '' : `<button type="button" onclick="removeAdminClass('${item.id}')">মুছুন</button>`}</div>`).join('');
-    const bookItems = classBooks.map((book) => `<div class="admin-list-item"><div><b>${book.icon || '📘'} ${esc(book.title)}</b><small>${book.link ? 'লিংক সেভ হয়েছে' : 'এখনো URL দেওয়া হয়নি'} ${bookHasSolutions(book) ? '· সমাধান আছে' : ''}</small></div>${book.builtin ? '' : `<button type="button" onclick="removeAdminBook('${book.id}')">মুছুন</button>`}</div>`).join('');
+    const bookItems = classBooks.map((book) => `<div class="admin-list-item"><div><b>${book.icon || '📘'} ${esc(book.title)}</b><small>${book.link ? 'লিংক সেভ হয়েছে' : 'এখনো URL দেওয়া হয়নি'}${localFiles[book.id] ? ' · ফাইল: ' + esc(localFiles[book.id]) : ''} ${bookHasSolutions(book) ? '· সমাধান আছে' : ''}</small></div>${book.builtin ? '' : `<button type="button" onclick="removeAdminBook('${book.id}')">মুছুন</button>`}</div>`).join('');
     const job = readJob();
     const resume = job ? `<p class="admin-note">অসমাপ্ত সমাধান আছে: ${esc(job.title || 'বই')} · পৃষ্ঠা ${bnNum(job.nextPage)}/${bnNum(job.pageCount)}। <button type="button" class="admin-inline-button" onclick="resumeSolutionJob()">চালিয়ে যান</button></p>` : '';
     return `<div class="school-app"><div class="admin-wrap admin-stack">${appHeader('<b>সেটিংস</b>')}<div class="admin-card"><div class="subject-heading"><h1>এডমিন সেটিংস</h1><p>লগইন: ${esc(adminSession.id || 'Uzzal')}</p></div><div class="admin-form"><button type="button" class="secondary" onclick="adminLogout()">লগআউট</button></div>${warning}</div>
       <section class="admin-card"><h2>নতুন শ্রেণী যোগ করুন</h2><p>শ্রেণীর নাম লিখে যোগ করুন। যোগ করা শ্রেণী শ্রেণী পেজে দেখা যাবে।</p><form class="admin-form" onsubmit="addAdminClass(event)"><input id="newClassName" placeholder="যেমন: চতুর্থ শ্রেণী" aria-label="নতুন শ্রেণীর নাম"><button type="submit">শ্রেণী যোগ করুন</button></form><div class="admin-list">${classItems}</div></section>
       <section class="admin-card"><h2>বই যোগ করুন</h2><p>শ্রেণী বেছে নিয়ে বইয়ের নাম যোগ করুন। তারপর নিচের ড্রপডাউন থেকে বই বেছে URL সেভ করুন।</p><form class="admin-form" onsubmit="addAdminBook(event)"><select id="bookClassSelect" onchange="setSettingsClass(this.value)">${optionList(classes, selectedClass, 'শ্রেণী নির্বাচন')}</select><input id="newBookName" placeholder="বইয়ের নাম" aria-label="বইয়ের নাম"><button type="submit">বইয়ের নাম যোগ করুন</button></form>
       ${urlBooks.length ? `<form class="admin-form" onsubmit="saveAdminBookUrl(event)"><select id="urlBookSelect">${optionList(urlBooks, selectedBook, 'বই নির্বাচন')}</select><input id="bookUrlInput" placeholder="বইয়ের ওয়েবসাইট, Google Drive বা PDF লিংক" aria-label="বইয়ের URL"><button class="warn" type="submit">URL সেভ করুন</button></form>` : '<p class="admin-note">এই শ্রেণীতে বইয়ের নাম যোগ করলে এখানে বইয়ের ড্রপডাউন আসবে।</p>'}
+      <form class="admin-form" onsubmit="saveAdminBookFile(event)"><select id="fileBookSelect">${optionList(classBooks, selectedBook, 'বই নির্বাচন')}</select><input id="bookFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt,application/pdf,image/*,text/plain" multiple aria-label="বইয়ের ফাইল" style="height:auto;padding:8px"><button type="submit">ফাইল সেভ করুন</button></form>
+      <p class="admin-note">লিংকের পাশাপাশি PDF, JPG বা TXT আপলোড করুন। AI তখন সরাসরি ফাইল পড়ে উত্তর দেবে। বড় PDF এই ব্রাউজারে সেভ থাকে।${localFiles[selectedBook] ? ' সেভ করা ফাইল: ' + esc(localFiles[selectedBook]) : ''}</p>
       <div class="admin-list">${bookItems || '<p class="admin-note">এই শ্রেণীতে এখনো নতুন বই নেই।</p>'}</div></section>
       <section class="admin-card"><h2>সমাধান তৈরী করুন</h2><p>শ্রেণী ও বই বেছে নিয়ে বাটনে চাপুন। সেভ করা ওয়েবসাইট, Google Drive বা PDF থেকে অনুশীলনী অধ্যায়ভিত্তিক তুলে উত্তরসহ সমাধান বই সংরক্ষণ হবে। লিংকটি সবার জন্য খোলা থাকতে হবে।</p><div class="admin-form"><select id="solutionClassSelect" onchange="setSolutionClass(this.value)">${optionList(classes, solutionClass, 'শ্রেণী নির্বাচন')}</select><select id="solutionBookSelect">${optionList(solutionBooks, solutionBook, 'বই নির্বাচন')}</select><button type="button" onclick="startSolutionJob(false)">সমাধান তৈরী করুন</button></div>${resume}<div id="solutionProgress"></div></section></div></div>`;
   }
@@ -350,6 +353,7 @@
     if (!appState.answerBookId) return setVoiceSearchStatus('প্রথমে সেই শ্রেণীর বই নির্বাচন করুন।');
     if (!query) return setVoiceSearchStatus('প্রশ্ন লিখুন বা ভয়েস দিয়ে বলুন।');
     closeAnswerBookPicker();
+    if (localFiles[appState.answerBookId]) return answerFromAddedBook(appState.answerBookId, query);
     if (BUILTIN_IDS.has(appState.answerBookId)) return selectAnswerBook(appState.answerBookId);
     return answerFromAddedBook(appState.answerBookId, query);
   };
@@ -398,12 +402,196 @@
       : { aiLoading: false, aiAnswer: answer, aiAnswerKind: 'ai', aiError: '', aiVerificationStatus: 'source-checked' });
     renderGeneratedBookAnswer();
   }
+
+  function fileDb() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('AmarBoiFiles', 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('files', { keyPath: 'bookId' });
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error('ফাইল সেভ করা যায়নি।'));
+    });
+  }
+  function fileKind(file) {
+    const name = String(file.name || '').toLowerCase();
+    const type = String(file.type || '').toLowerCase();
+    if (type === 'application/pdf' || name.endsWith('.pdf')) return 'pdf';
+    if (type.startsWith('image/') || /\.(jpe?g|png|webp)$/.test(name)) return 'image';
+    if (type.startsWith('text/') || name.endsWith('.txt')) return 'txt';
+    return '';
+  }
+  async function putBookFiles(bookId, files) {
+    const db = await fileDb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction('files', 'readwrite');
+      tx.objectStore('files').put({ bookId: bookId, files: files, savedAt: new Date().toISOString() });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error('ফাইল সেভ করা যায়নি।'));
+    });
+    db.close();
+  }
+  async function getBookFiles(bookId) {
+    const db = await fileDb();
+    const row = await new Promise((resolve, reject) => {
+      const tx = db.transaction('files', 'readonly');
+      const request = tx.objectStore('files').get(bookId);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    return row;
+  }
+  async function refreshLocalFiles() {
+    try {
+      const db = await fileDb();
+      const rows = await new Promise((resolve, reject) => {
+        const tx = db.transaction('files', 'readonly');
+        const request = tx.objectStore('files').getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+      localFiles = {};
+      rows.forEach((row) => {
+        const names = (row.files || []).map((file) => file.name).filter(Boolean);
+        if (names.length) localFiles[row.bookId] = names.join(', ');
+      });
+      (catalog.books || []).forEach((book) => {
+        if (localFiles[book.id]) book.fileName = localFiles[book.id];
+      });
+    } catch (_) {}
+    return localFiles;
+  }
+  function bytesToBase64(bytes) {
+    const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    return uint8ToBase64(view);
+  }
+  async function imageBase64(file) {
+    const blob = new Blob([file.bytes], { type: file.type || 'image/jpeg' });
+    const bitmap = await createImageBitmap(blob);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const data = canvas.toDataURL('image/jpeg', 0.72);
+    return data.split(',')[1] || '';
+  }
+  async function answerFromPdfFile(book, query, requestId, bytes) {
+    await loadPdfLib();
+    const doc = await window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+    const pageCount = Math.min(doc.getPageCount(), 160);
+    for (let start = 1; start <= pageCount; start += 4) {
+      if (appState.aiRequestId !== requestId) return 'stopped';
+      const end = Math.min(pageCount, start + 3);
+      setVoiceSearchStatus(`আপলোড করা PDF-এর পৃষ্ঠা ${bnNum(start)}–${bnNum(end)} পড়া হচ্ছে…`);
+      const ranges = [];
+      const combined = await slicePagesBase64(doc, start, end);
+      if (combined) ranges.push(combined);
+      else {
+        for (let page = start; page <= end; page += 1) {
+          const one = await slicePagesBase64(doc, page, page);
+          if (one) ranges.push(one);
+        }
+      }
+      for (const pdfBase64 of ranges) {
+        if (appState.aiRequestId !== requestId) return 'stopped';
+        const response = await fetch('/api/answer-from-book', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: query, pdfBase64: pdfBase64, bookTitle: book.title, className: classLabel(appState.classId) })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'ফাইল থেকে উত্তর পড়া যায়নি।');
+        if (data.found && data.answer) return data.answer;
+      }
+    }
+    return '';
+  }
+  async function answerFromLocalFile(book, query, requestId) {
+    const row = await getBookFiles(book.id);
+    const files = row && Array.isArray(row.files) ? row.files : [];
+    if (!files.length) return '';
+    const pdf = files.find((file) => fileKind(file) === 'pdf');
+    if (pdf) {
+      setVoiceSearchStatus('আপলোড করা PDF খোলা হচ্ছে…');
+      return answerFromPdfFile(book, query, requestId, pdf.bytes);
+    }
+    const images = files.filter((file) => fileKind(file) === 'image').slice(0, 16);
+    for (let index = 0; index < images.length; index += 1) {
+      if (appState.aiRequestId !== requestId) return 'stopped';
+      setVoiceSearchStatus(`ছবি ${bnNum(index + 1)} পড়া হচ্ছে…`);
+      const image = await imageBase64(images[index]);
+      if (!image) continue;
+      const data = await postJson('/api/read-book', {
+        action: 'answer-image',
+        imageBase64: image,
+        mimeType: 'image/jpeg',
+        question: query,
+        bookTitle: book.title,
+        className: classLabel(appState.classId)
+      });
+      if (data.found && data.answer) return data.answer;
+    }
+    const texts = files.filter((file) => fileKind(file) === 'txt');
+    for (const file of texts) {
+      const text = new TextDecoder('utf-8').decode(file.bytes instanceof ArrayBuffer ? file.bytes : new Uint8Array(file.bytes));
+      const windows = [];
+      for (let i = 0; i < text.length && windows.length < 8; i += 7000) windows.push(text.slice(i, i + 8000));
+      for (let index = 0; index < windows.length; index += 1) {
+        if (appState.aiRequestId !== requestId) return 'stopped';
+        setVoiceSearchStatus('আপলোড করা লেখা পড়া হচ্ছে…');
+        const data = await postJson('/api/read-book', {
+          action: 'answer-text',
+          text: windows[index],
+          question: query,
+          bookTitle: book.title,
+          className: classLabel(appState.classId)
+        });
+        if (data.found && data.answer) return data.answer;
+      }
+    }
+    return '';
+  }
+  window.saveAdminBookFile = async function (event) {
+    if (event) event.preventDefault();
+    const bookId = document.getElementById('fileBookSelect')?.value || '';
+    const input = document.getElementById('bookFileInput');
+    const picked = Array.from(input?.files || []);
+    if (!bookId) return alert('বই নির্বাচন করুন।');
+    if (!picked.length) return alert('PDF, JPG বা TXT ফাইল বেছে নিন।');
+    const accepted = picked.filter((file) => fileKind(file)).slice(0, 16);
+    if (!accepted.length) return alert('শুধু PDF, JPG, PNG, WEBP বা TXT ফাইল দেওয়া যাবে।');
+    if (accepted.some((file) => file.size > 80 * 1024 * 1024)) return alert('একটি ফাইল ৮০ মেগাবাইটের বেশি। ছোট করে আবার দিন।');
+    const stored = [];
+    for (const file of accepted) {
+      stored.push({ name: file.name, type: file.type || '', kind: fileKind(file), bytes: await file.arrayBuffer() });
+    }
+    await putBookFiles(bookId, stored);
+    const book = (catalog.books || []).find((item) => item.id === bookId);
+    if (book) {
+      book.fileName = stored.map((file) => file.name).join(', ');
+      book.published = true;
+      try { await saveCatalog(); } catch (_) {}
+    }
+    localFiles[bookId] = stored.map((file) => file.name).join(', ');
+    if (input) input.value = '';
+    renderSchoolApp();
+    alert('ফাইল সেভ হয়েছে। এখন খুঁজুন পেজে এই বই বেছে প্রশ্ন করুন। বড় PDF হলে উত্তর আসতে এক-দুই মিনিট লাগতে পারে। ফাইল এই ব্রাউজারে সেভ থাকে।');
+  };
+
   async function answerFromAddedBook(bookId, query) {
     const book = appBook(bookId);
     if (!book) return setVoiceSearchStatus('বইটি পাওয়া যায়নি।');
     const requestId = beginAnswer(book, query);
     try {
-      if (!book.link) throw new Error('এই বইয়ের URL সেটিংসে সেভ করা নেই।');
+      const localAnswer = await answerFromLocalFile(book, query, requestId);
+      if (localAnswer === 'stopped') return;
+      if (localAnswer) {
+        setVoiceSearchStatus('');
+        finishAnswer(requestId, localAnswer);
+        return;
+      }
+      if (!book.link) throw new Error('এই বইয়ের URL বা ফাইল সেটিংসে সেভ করা নেই।');
       setVoiceSearchStatus('সেভ করা লিংক থেকে বই খোলা হচ্ছে… বড় PDF হলে একটু সময় লাগবে।');
       let data = await postJson('/api/read-book', {
         action: 'open',
@@ -664,7 +852,7 @@
     const copied = await out.copyPages(doc, indexes);
     copied.forEach((page) => out.addPage(page));
     const bytes = await out.save();
-    if (bytes.length > 3200000) return end > start ? null : '';
+    if (bytes.length > 2400000) return end > start ? null : '';
     return uint8ToBase64(bytes);
   }
 
@@ -821,7 +1009,7 @@
   appState = appRouteFromHash();
   appWriteUrl(true);
   renderSchoolApp();
-  refreshAdminSession().then(loadCatalog).then(() => {
+  refreshAdminSession().then(loadCatalog).then(refreshLocalFiles).then(() => {
     renderNav();
     const next = appRouteFromHash();
     if (next.screen !== 'login' && next.screen !== 'settings') appState = Object.assign({}, appState, next);
