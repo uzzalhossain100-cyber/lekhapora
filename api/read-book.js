@@ -422,6 +422,20 @@ module.exports = async function handler(req, res) {
     if (!['answer', 'open', 'answer-image', 'answer-text'].includes(action) && !admin) return send(res, 401, { error: 'আগে এডমিন লগইন করুন।' });
     const bookTitleEarly = String(body.bookTitle || 'বই').slice(0, 80);
     const classNameEarly = String(body.className || 'শ্রেণী').slice(0, 60);
+    if (action === 'solve-image' || action === 'solve-plain') {
+      if (!admin) return send(res, 401, { error: 'আগে এডমিন লগইন করুন।' });
+      if (action === 'solve-plain') {
+        const lesson = String(body.text || '').slice(0, 9000);
+        if (lesson.length < 40) return send(res, 200, { items: [] });
+        const prompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + classNameEarly + '। বই: ' + bookTitleEarly + '।\nনিচের পাঠ থেকে শুধু অনুশীলনী, প্রশ্ন, শূন্যস্থান, নৈর্ব্যত্তিক, মিলকরণ ও বাড়ির কাজ হুবহু তুলে উত্তর দাও। গল্পের পুরো পাঠ কপি করবে না। প্রশ্ন না থাকলে items খালি রাখবে। শুধু JSON: {"items":[{"page":1,"chapter":"অধ্যায়","type":"অনুশীলনী","question":"প্রশ্ন","answer":"উত্তর"}]}\n\nপাঠ:\n' + lesson;
+        return send(res, 200, { items: cleanItems(await gemini([{ text: prompt }], 4096), Number(body.part) || 1) });
+      }
+      const image = String(body.imageBase64 || '').replace(/^data:[^,]*,/, '');
+      if (image.length < 80) return send(res, 200, { items: [] });
+      const mime = /^image\/(jpeg|png|webp)$/.test(String(body.mimeType || '')) ? String(body.mimeType) : 'image/jpeg';
+      const prompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + classNameEarly + '। বই: ' + bookTitleEarly + '।\nসংযুক্ত ছবি বইয়ের একটি পাতা। শুধু অনুশীলনী, প্রশ্ন, শূন্যস্থান, নৈর্ব্যত্তিক ও বাড়ির কাজ হুবহু তুলে উত্তর দাও। প্রশ্ন না থাকলে items খালি রাখবে। শুধু JSON: {"items":[{"page":' + (Number(body.part) || 1) + ',"chapter":"অধ্যায়","type":"অনুশীলনী","question":"প্রশ্ন","answer":"উত্তর"}]}';
+      return send(res, 200, { items: cleanItems(await gemini([{ inline_data: { mime_type: mime, data: image } }, { text: prompt }], 4096), Number(body.part) || 1) });
+    }
     if (action === 'answer-image' || action === 'answer-text') {
       const question = String(body.question || '').trim().slice(0, 1200);
       if (!question) return send(res, 400, { error: 'প্রশ্ন লিখুন।' });

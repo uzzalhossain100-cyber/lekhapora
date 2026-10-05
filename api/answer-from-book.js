@@ -148,11 +148,14 @@ async function answerFromPdf({ bytes, className, bookTitle, question, paged }) {
     { text: answerPrompt(className, bookTitle, question, paged) }
   ], { temperature: 0.2, maxOutputTokens: 900 });
   const parsed = parseJsonLoose(text);
-  if (!parsed || typeof parsed !== 'object') {
-    return { found: false, answer: '' };
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    const answer = String(parsed.answer || '').trim();
+    if (parsed.found === false && answer.length < 25) return { found: false, answer: '' };
+    if (answer.length > 8) return { found: true, answer: answer.slice(0, 4000) };
   }
-  const answer = String(parsed.answer || '').trim();
-  return { found: parsed.found === true && Boolean(answer), answer };
+  const raw = String(text || '').trim();
+  if (raw.length > 25 && !raw.startsWith('{') && !raw.startsWith('[')) return { found: true, answer: raw.slice(0, 4000) };
+  return { found: false, answer: '' };
 }
 
 const hits = new Map();
@@ -165,7 +168,7 @@ function limited(ip) {
   }
   row.count += 1;
   hits.set(ip, row);
-  return row.count > 40;
+  return row.count > 160;
 }
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
