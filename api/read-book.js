@@ -278,6 +278,7 @@ function interpretAnswer(raw) {
   const parsed = parseJsonLoose(raw);
   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
     const answer = String(parsed.answer || '').trim();
+    if (answer.includes('নিশ্চিত উত্তর') || (answer.length < 80 && (answer.includes('পাওয়া যায়নি') || answer.includes('পাওয়া যায়নি')))) return { found: false, answer: '' };
     if (parsed.found === false && answer.length < 30) return { found: false, answer: '' };
     if (answer.length > 8) return { found: true, answer: answer.slice(0, 4000) };
   }
@@ -356,7 +357,7 @@ function cleanItems(raw, fallbackPage) {
   return list.map((item) => {
     const question = String(item.question || '').trim();
     const answer = String(item.answer || '').trim();
-    if (question.length < 2 || !answer) return null;
+    if (question.length < 2 || !answer || answer.includes('নিশ্চিত উত্তর')) return null;
     return {
       page: Number(item.page) || fallbackPage || 0,
       chapter: String(item.chapter || 'অনুশীলনী').slice(0, 180),
@@ -386,8 +387,9 @@ async function inspectLink(raw) {
   }
   throw Object.assign(new Error('এই লিংক থেকে বই পড়া যায়নি। লিংকটি সবার জন্য খোলা আছে কিনা দেখুন।'), { status: 422 });
 }
-function pdfAnswerPrompt(className, bookTitle, question) {
-  return 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '.\nশিক্ষার্থীর প্রশ্ন: ' + question + '\nসংযুক্ত PDF-এর সব পাতা দেখো। স্ক্যান করা পাতা হলে ছবি পড়ে উত্তর দাও। বইয়ের ভাষায় সংক্ষিপ্ত সঠিক উত্তর দাও। বিষয়টি বইয়ে থাকলে found=true। না থাকলে found=false। নিজের মন থেকে উত্তর বানাবে না। শুধু JSON: {"found":true,"answer":"উত্তর"}';
+function pdfAnswerPrompt(className, bookTitle, question, pageHint) {
+  const hint = pageHint ? '\nআগে পৃষ্ঠা ' + pageHint + ' এর আগের ও পরের পাঠ দেখে উত্তর দাও।' : '';
+  return 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '.\nশিক্ষার্থীর প্রশ্ন: ' + question + hint + '\nসংযুক্ত PDF-এর পাতা দেখো। স্ক্যান করা পাতা হলে ছবি পড়ে উত্তর দাও। বইয়ের ভাষায় সংক্ষিপ্ত সঠিক উত্তর দাও। বিষয়টি বইয়ে থাকলে found=true। না থাকলে found=false। অনিশ্চিত বাক্য লিখবে না। নিজের মন থেকে উত্তর বানাবে না। শুধু JSON: {"found":true,"answer":"উত্তর"}';
 }
 async function waitUntilActive(name) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -400,9 +402,9 @@ async function waitUntilActive(name) {
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 }
-async function answerPdf(uploaded, className, bookTitle, question) {
+async function answerPdf(uploaded, className, bookTitle, question, pageHint) {
   await waitUntilActive(uploaded.name);
-  return interpretAnswer(await gemini(pdfParts(uploaded, pdfAnswerPrompt(className, bookTitle, question)), 1400));
+  return interpretAnswer(await gemini(pdfParts(uploaded, pdfAnswerPrompt(className, bookTitle, question, pageHint)), 1400));
 }
 async function cachedSource(url) {
   const hit = sourceCache.get(url);
@@ -433,8 +435,13 @@ module.exports = async function handler(req, res) {
       const image = String(body.imageBase64 || '').replace(/^data:[^,]*,/, '');
       if (image.length < 80) return send(res, 200, { items: [] });
       const mime = /^image\/(jpeg|png|webp)$/.test(String(body.mimeType || '')) ? String(body.mimeType) : 'image/jpeg';
-      const prompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + classNameEarly + '। বই: ' + bookTitleEarly + '।\nসংযুক্ত ছবি বইয়ের একটি পাতা। শুধু অনুশীলনী, প্রশ্ন, শূন্যস্থান, নৈর্ব্যত্তিক ও বাড়ির কাজ হুবহু তুলে উত্তর দাও। প্রশ্ন না থাকলে items খালি রাখবে। শুধু JSON: {"items":[{"page":' + (Number(body.part) || 1) + ',"chapter":"অধ্যায়","type":"অনুশীলনী","question":"প্রশ্ন","answer":"উত্তর"}]}';
-      return send(res, 200, { items: cleanItems(await gemini([{ inline_data: { mime_type: mime, data: image } }, { text: prompt }], 4096), Number(body.part) || 1) });
+      const previous = String(body.previousImageBase64 || '').replace(/^data:[^,]*,/, '');
+      const prompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + classNameEarly + '। বই: ' + bookTitleEarly + '।\nসংযুক্ত ছবি বইয়ের পাতা। আগের পাতা থাকলে সেটি পাঠ, পরেরটি অনুশীলনী হতে পারে। দুটো দেখে প্রশ্ন হুবহু তুলে উত্তর দাও। উত্তর না পেলে সেই প্রশ্ন বাদ দাও। অনিশ্চিত বাক্য লিখবে না। শুধু JSON: {"items":[{"page":' + (Number(body.part) || 1) + ',"chapter":"অধ্যায়","type":"অনুশীলনী","question":"প্রশ্ন","answer":"উত্তর"}]}';
+      const parts = [];
+      if (previous.length > 80) parts.push({ inline_data: { mime_type: mime, data: previous } });
+      parts.push({ inline_data: { mime_type: mime, data: image } });
+      parts.push({ text: prompt });
+      return send(res, 200, { items: cleanItems(await gemini(parts, 4096), Number(body.part) || 1) });
     }
     if (action === 'answer-image' || action === 'answer-text') {
       const question = String(body.question || '').trim().slice(0, 1200);
@@ -513,7 +520,7 @@ module.exports = async function handler(req, res) {
         return send(res, 200, { kind: 'pdf', fileUri: uploaded.fileUri, mimeType: uploaded.mimeType || 'application/pdf', fileName: uploaded.name || '', filename: source.filename || '' });
       }
       if (!question) return send(res, 400, { error: 'প্রশ্ন লিখুন।' });
-      const small = await answerPdf(uploaded, className, bookTitle, question);
+      const small = await answerPdf(uploaded, className, bookTitle, question, Number(body.pageHint) || 0);
       if (!small.found) return send(res, 200, { found: false, answer: '', error: 'এই PDF-এ প্রশ্নের উত্তর পাওয়া যায়নি।' });
       return send(res, 200, small);
     }
@@ -534,14 +541,14 @@ module.exports = async function handler(req, res) {
         })();
       const startPage = Math.max(1, Number(body.startPage) || 1);
       const endPage = Math.max(startPage, Number(body.endPage) || startPage);
-      const prompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '।\nসংযুক্ত PDF-এর পৃষ্ঠা ' + startPage + ' থেকে ' + endPage + ' দেখো। শুধু অনুশীলনী, প্রশ্ন, শূন্যস্থান, নৈর্ব্যত্তিক ও বাড়ির কাজ হুবহু তুলে উত্তর দাও। পুরো অধ্যায়ের গল্প কপি করবে না। প্রশ্ন না থাকলে খালি তালিকা দাও। শুধু JSON:\n{"items":[{"page":' + startPage + ',"chapter":"অধ্যায়","type":"অনুশীলনী","question":"প্রশ্ন","answer":"উত্তর"}]}';
+      const prompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + className + '। বই: ' + bookTitle + '।\nপৃষ্ঠা ' + startPage + ' থেকে ' + endPage + ' থেকে প্রশ্ন তোলো। উত্তর লিখতে এই পাতা এবং একই PDF-এর আগের পাঠের পাতাও দেখো। পুরো গল্প কপি করবে না। উত্তর না পেলে সেই প্রশ্ন বাদ দাও। অনিশ্চিত বাক্য লিখবে না। শুধু JSON:\n{"items":[{"page":' + startPage + ',"chapter":"অধ্যায়","type":"অনুশীলনী","question":"প্রশ্ন","answer":"উত্তর"}]}';
       const raw = await gemini(pdfParts(uploaded, prompt), 4096);
       return send(res, 200, { items: cleanItems(raw, startPage) });
     }
     const question = String(body.question || '').trim().slice(0, 1200);
     if (!question) return send(res, 400, { error: 'প্রশ্ন লিখুন।' });
     if (body.fileUri) {
-      const result = await answerPdf({ inline: false, fileUri: String(body.fileUri), mimeType: String(body.mimeType || 'application/pdf'), name: String(body.fileName || '') }, className, bookTitle, question);
+      const result = await answerPdf({ inline: false, fileUri: String(body.fileUri), mimeType: String(body.mimeType || 'application/pdf'), name: String(body.fileName || '') }, className, bookTitle, question, Number(body.pageHint) || 0);
       if (!result.found) return send(res, 200, { found: false, answer: '', error: 'এই PDF-এ প্রশ্নের উত্তর পাওয়া যায়নি।' });
       return send(res, 200, result);
     }

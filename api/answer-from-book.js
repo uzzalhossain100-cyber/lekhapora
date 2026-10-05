@@ -100,7 +100,7 @@ function solutionPrompt(className, bookTitle, start, end) {
 - শুধু অনুশীলনী, প্রশ্ন, শূন্যস্থান পূরণ, নৈর্ব্যত্তিক বা বহুনির্বাচনি, মিল করো, সত্য-মিথ্যা, বাড়ির কাজ ও অন্যান্য করণীয় কাজ বের করো।
 - গল্প, কবিতা বা অধ্যায়ের পুরো পাঠ আলাদা করে কপি করবে না। শুধু প্রশ্ন বা কাজের অংশ হুবহু তুলবে।
 - বইয়ে নেই এমন প্রশ্ন নিজে থেকে বানাবে না।
-- প্রতিটি প্রশ্নের সঠিক উত্তর বইয়ের পাঠ অনুসারে সহজ ভাষায় লিখবে। উত্তর নিশ্চিত না হলে উত্তরে লিখবে: বইয়ের এই পৃষ্ঠা থেকে নিশ্চিত উত্তর পাওয়া যায়নি।
+- প্রতিটি প্রশ্নের উত্তর সংযুক্ত পাতার পাঠ থেকে লিখবে। উত্তর না পেলে answer খালি রাখবে। অনিশ্চিত বাক্য লিখবে না।
 - এই পৃষ্ঠায় কোনো প্রশ্ন বা কাজ না থাকলে খালি তালিকা দাও।
 
 শুধু JSON দাও:
@@ -108,17 +108,18 @@ function solutionPrompt(className, bookTitle, start, end) {
 }
 
 function answerPrompt(className, bookTitle, question, paged) {
-  return `তুমি বাংলাদেশের স্কুল শিক্ষক।
+  return `তুমি বাংলাদেশের একজন স্কুল শিক্ষক।
 শ্রেণী: ${className}
 নির্বাচিত বই: ${bookTitle}
 শিক্ষার্থীর প্রশ্ন: ${question}
 
-সংযুক্ত ${paged ? 'পৃষ্ঠাগুলো' : 'বই'} থেকে এই প্রশ্নের সঠিক উত্তর দাও।
-- বইয়ের বাইরের তথ্য দিয়ে অনুমান করবে না।
-- উত্তর সহজ ও বয়স-উপযোগী হবে।
-- এই অংশে উত্তর না থাকলে found=false দাও।
+সংযুক্ত ${paged ? 'পাতাগুলো' : 'বই'} থেকে এই প্রশ্নের সঠিক উত্তর দাও। স্ক্যান করা পাতা হলে ছবি পড়ে উত্তর দাও।
+- শুধু সংযুক্ত পাতার পাঠ, গল্প, কবিতা বা ছবি থেকে উত্তর দাও।
+- প্রশ্ন হুবহু না থাকলেও পাঠে বিষয়টি থাকলে উত্তর দাও।
+- উত্তর সহজ, সংক্ষিপ্ত ও বইয়ের ভাষায় হবে।
+- অনিশ্চিত বাক্য লিখবে না। এই পাতায় বিষয়টি না থাকলে found=false ও answer খালি দাও।
 শুধু JSON দাও:
-{"found":false,"answer":""}`;
+{"found":true,"answer":"উত্তর"}`;
 }
 
 async function solvePdfPages({ bytes, className, bookTitle, startPage, endPage }) {
@@ -150,6 +151,7 @@ async function answerFromPdf({ bytes, className, bookTitle, question, paged }) {
   const parsed = parseJsonLoose(text);
   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
     const answer = String(parsed.answer || '').trim();
+    if (answer.includes('নিশ্চিত উত্তর') || (answer.length < 80 && (answer.includes('পাওয়া যায়নি') || answer.includes('পাওয়া যায়নি')))) return { found: false, answer: '' };
     if (parsed.found === false && answer.length < 25) return { found: false, answer: '' };
     if (answer.length > 8) return { found: true, answer: answer.slice(0, 4000) };
   }

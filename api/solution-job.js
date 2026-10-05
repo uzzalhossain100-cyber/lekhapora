@@ -174,6 +174,11 @@ async function geminiGenerate(parts, { temperature = 0.2, maxOutputTokens = 2048
   throw error;
 }
 
+function weakServerAnswer(answer) {
+  const text = String(answer || '').replace(/\s+/g, ' ').trim();
+  return text.length < 2 || text.includes('নিশ্চিত উত্তর') || (text.length < 80 && (text.includes('পাওয়া যায়নি') || text.includes('পাওয়া যায়নি')));
+}
+
 function pdfPart(bytes) {
   return { inline_data: { mime_type: 'application/pdf', data: Buffer.from(bytes).toString('base64') } };
 }
@@ -188,7 +193,7 @@ function solutionPrompt(className, bookTitle, start, end) {
 - শুধু অনুশীলনী, প্রশ্ন, শূন্যস্থান পূরণ, নৈর্ব্যত্তিক বা বহুনির্বাচনি, মিল করো, সত্য-মিথ্যা, বাড়ির কাজ ও অন্যান্য করণীয় কাজ বের করো।
 - গল্প, কবিতা বা অধ্যায়ের পুরো পাঠ আলাদা করে কপি করবে না। শুধু প্রশ্ন বা কাজের অংশ হুবহু তুলবে।
 - বইয়ে নেই এমন প্রশ্ন নিজে থেকে বানাবে না।
-- প্রতিটি প্রশ্নের সঠিক উত্তর বইয়ের পাঠ অনুসারে সহজ ভাষায় লিখবে। উত্তর নিশ্চিত না হলে উত্তরে লিখবে: বইয়ের এই পৃষ্ঠা থেকে নিশ্চিত উত্তর পাওয়া যায়নি।
+- প্রতিটি প্রশ্নের উত্তর সংযুক্ত সব পাতার পাঠ, গল্প, কবিতা, ছবি বা উদাহরণ থেকে সহজ ভাষায় লিখবে। অনুশীলনীর আগের পাঠও এই পাতায় থাকতে পারে।\n- উত্তর না পেলে answer খালি স্ট্রিং রাখবে। অনিশ্চিত বা ক্ষমাপ্রার্থনামূলক বাক্য লিখবে না।
 - এই পৃষ্ঠায় কোনো প্রশ্ন বা কাজ না থাকলে খালি তালিকা দাও।
 
 শুধু JSON দাও:
@@ -219,13 +224,14 @@ async function solvePdfPages({ bytes, className, bookTitle, startPage, endPage }
   return list.map((item) => {
     const question = String(item.question || '').trim();
     const answer = String(item.answer || '').trim();
-    if (question.length < 2 || answer.length < 1) return null;
+    if (question.length < 2) return null;
+    const usable = weakServerAnswer(answer) ? '' : answer;
     return {
       page: Math.max(startPage, Math.min(endPage, Number(item.page) || startPage)),
       chapter: String(item.chapter || `পৃষ্ঠা ${startPage}`).trim().slice(0, 180),
       type: String(item.type || 'অনুশীলনী').trim().slice(0, 40),
       question: question.slice(0, 2000),
-      answer: answer.slice(0, 4000)
+      answer: usable.slice(0, 4000)
     };
   }).filter(Boolean);
 }
@@ -243,6 +249,42 @@ async function answerFromPdf({ bytes, className, bookTitle, question, paged }) {
   return { found: parsed.found === true && Boolean(answer), answer };
 }
 
+
+function fillPrompt(className, bookTitle, start, end, questions) {
+  const lines = questions.map((item, index) => (index + 1) + '. ' + item).join('\n');
+  return `তুমি বাংলাদেশের একজন অভিজ্ঞ স্কুল শিক্ষক।
+শ্রেণী: ${className}
+বই: ${bookTitle}
+সংযুক্ত PDF-এ পৃষ্ঠা ${start} থেকে ${end} আছে। স্ক্যান করা পাতা হলে ছবি পড়ে উত্তর দাও।
+
+নিচের প্রতিটি প্রশ্নের উত্তর শুধু এই পাতাগুলোর পাঠ, গল্প, কবিতা, ছবি বা উদাহরণ থেকে দাও।
+- বইয়ের বাইরের তথ্য দিয়ে উত্তর বানাবে না।
+- অনিশ্চিত বা ক্ষমাপ্রার্থনামূলক বাক্য লিখবে না।
+- উত্তর না পেলে সেই প্রশ্ন JSON-এ রাখবে না।
+- question ফিল্ডে প্রশ্নটি হুবহু কপি করবে।
+
+প্রশ্ন:
+${lines}
+
+শুধু JSON দাও:
+{"items":[{"question":"প্রশ্ন হুবহু","answer":"বই থেকে সংক্ষিপ্ত সঠিক উত্তর"}]}`;
+}
+
+async function fillPdfPages({ bytes, className, bookTitle, startPage, endPage, questions }) {
+  const text = await geminiGenerate([
+    pdfPart(bytes),
+    { text: fillPrompt(className, bookTitle, startPage, endPage, questions) }
+  ], { temperature: 0.15, maxOutputTokens: 4096 });
+  const parsed = parseJsonLoose(text);
+  const list = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.items) ? parsed.items : []);
+  return list.map((item) => {
+    const question = String(item.question || '').trim();
+    const answer = String(item.answer || '').trim();
+    if (question.length < 2 || weakServerAnswer(answer)) return null;
+    return { question: question.slice(0, 2000), answer: answer.slice(0, 4000) };
+  }).filter(Boolean);
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -255,13 +297,18 @@ module.exports = async function handler(req, res) {
     if (bytes.length < 100 || bytes.length > 4 * 1024 * 1024 || bytes.slice(0, 4).toString() !== '%PDF') {
       return send(res, 400, { error: 'পৃষ্ঠার ফাইলটি পড়া যায়নি। আবার চেষ্টা করুন।' });
     }
-    const items = await solvePdfPages({
-      bytes: bytes,
-      className: String(body.className || 'শ্রেণী').slice(0, 60),
-      bookTitle: String(body.bookTitle || 'বই').slice(0, 80),
-      startPage: Math.max(1, Number(body.startPage) || 1),
-      endPage: Math.max(1, Number(body.endPage) || Number(body.startPage) || 1)
-    });
+    const className = String(body.className || 'শ্রেণী').slice(0, 60);
+    const bookTitle = String(body.bookTitle || 'বই').slice(0, 80);
+    const startPage = Math.max(1, Number(body.startPage) || 1);
+    const endPage = Math.max(startPage, Number(body.endPage) || startPage);
+    const questions = Array.isArray(body.questions)
+      ? body.questions.map((item) => String((item && item.question) || item || '').trim()).filter((item) => item.length > 1).slice(0, 8)
+      : [];
+    if (questions.length) {
+      const items = await fillPdfPages({ bytes, className, bookTitle, startPage, endPage, questions });
+      return send(res, 200, { items: items, fill: true });
+    }
+    const items = await solvePdfPages({ bytes, className, bookTitle, startPage, endPage });
     return send(res, 200, { items: items });
   } catch (error) {
     return send(res, error.status || 502, { error: error.message || 'সমাধান তৈরি করা যায়নি।' });
