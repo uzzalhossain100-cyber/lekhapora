@@ -284,7 +284,7 @@
       <form class="admin-form" onsubmit="saveAdminBookFile(event)"><select id="fileBookSelect">${optionList(classBooks, selectedBook, 'বই নির্বাচন')}</select><input id="bookFileInput" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt,application/pdf,image/*,text/plain" multiple aria-label="বইয়ের ফাইল" style="height:auto;padding:8px"><button type="submit">ফাইল সেভ করুন</button></form>
       <p class="admin-note">লিংকের পাশাপাশি PDF, JPG বা TXT আপলোড করুন। AI তখন সরাসরি ফাইল পড়ে উত্তর দেবে। বড় PDF এই ব্রাউজারে সেভ থাকে।${localFiles[selectedBook] ? ' সেভ করা ফাইল: ' + esc(localFiles[selectedBook]) : ''}</p>
       <div class="admin-list">${bookItems || '<p class="admin-note">এই শ্রেণীতে এখনো নতুন বই নেই।</p>'}</div></section>
-      <section class="admin-card"><h2>সমাধান তৈরী করুন</h2><p>শ্রেণী ও বই বেছে নিয়ে বাটনে চাপুন। সেভ করা ওয়েবসাইট, Google Drive বা PDF থেকে অনুশীলনী অধ্যায়ভিত্তিক তুলে উত্তরসহ সমাধান বই সংরক্ষণ হবে। লিংকটি সবার জন্য খোলা থাকতে হবে।</p><div class="admin-form"><select id="solutionClassSelect" onchange="setSolutionClass(this.value)">${optionList(classes, solutionClass, 'শ্রেণী নির্বাচন')}</select><select id="solutionBookSelect">${optionList(solutionBooks, solutionBook, 'বই নির্বাচন')}</select><button type="button" onclick="startSolutionJob(false)">সমাধান তৈরী করুন</button></div>${resume}<div id="solutionProgress"></div></section></div></div>`;
+      <section class="admin-card"><h2>সমাধান তৈরী করুন</h2><p>শ্রেণী ও বই বেছে নিয়ে বাটনে চাপুন। আপলোড করা PDF, JPG বা TXT থেকে পুরো বইয়ের অনুশীলনী অধ্যায়ভিত্তিক তুলে উত্তরসহ সমাধান সংরক্ষণ হবে। বড় বইয়ে ১০–২০ মিনিট লাগতে পারে।</p><div class="admin-form"><select id="solutionClassSelect" onchange="setSolutionClass(this.value)">${optionList(classes, solutionClass, 'শ্রেণী নির্বাচন')}</select><select id="solutionBookSelect">${optionList(solutionBooks, solutionBook, 'বই নির্বাচন')}</select><button type="button" onclick="startSolutionJob(false)">সমাধান তৈরী করুন</button></div>${resume}<div id="solutionProgress"></div></section></div></div>`;
   }
 
   window.renderSchoolApp = function () {
@@ -294,6 +294,7 @@
     const screen = appState.screen;
     if (screen === 'login') { root.innerHTML = loginMarkup(); return; }
     if (screen === 'settings') { root.innerHTML = settingsMarkup(); return; }
+    if (screen === 'search') { root.innerHTML = window.searchPageMarkup(); return; }
     if (screen === 'classes') { root.innerHTML = classesMarkup(); return; }
     if (screen === 'sectors') { root.innerHTML = sectorsMarkup(); return; }
     if (screen === 'books') { root.innerHTML = booksMarkup(); return; }
@@ -336,7 +337,7 @@
   };
   window.setSearchClass = function (classId) {
     const books = booksForClass(classId, { publishedOnly: true });
-    const answerBookId = books.some((book) => book.id === appState.answerBookId) ? appState.answerBookId : '';
+    const answerBookId = books.some((book) => book.id === appState.answerBookId) ? appState.answerBookId : (books[0] ? books[0].id : '');
     appState = Object.assign({}, appState, { classId: classId || null, classNo: classId === 'class-3' ? 3 : null, answerBookId: answerBookId });
     appWriteUrl(true);
     renderSchoolApp();
@@ -347,15 +348,21 @@
     updateGenerateAnswerButton(appState.searchQuery || '');
     renderSearchLiveResults();
   };
-  window.createBookAnswer = function () {
+  window.createBookAnswer = async function () {
     const query = String(appState.searchQuery || '').trim();
     if (!appState.classId) return setVoiceSearchStatus('প্রথমে শ্রেণী নির্বাচন করুন।');
     if (!appState.answerBookId) return setVoiceSearchStatus('প্রথমে সেই শ্রেণীর বই নির্বাচন করুন।');
     if (!query) return setVoiceSearchStatus('প্রশ্ন লিখুন বা ভয়েস দিয়ে বলুন।');
     closeAnswerBookPicker();
-    if (localFiles[appState.answerBookId]) return answerFromAddedBook(appState.answerBookId, query);
-    if (BUILTIN_IDS.has(appState.answerBookId)) return selectAnswerBook(appState.answerBookId);
-    return answerFromAddedBook(appState.answerBookId, query);
+    let hasFile = Boolean(localFiles[appState.answerBookId]);
+    if (!hasFile) {
+      try {
+        const row = await getBookFiles(appState.answerBookId);
+        hasFile = Boolean(row && row.files && row.files.length);
+      } catch (_) {}
+    }
+    if (hasFile || !BUILTIN_IDS.has(appState.answerBookId)) return answerFromAddedBook(appState.answerBookId, query);
+    return selectAnswerBook(appState.answerBookId);
   };
 
   async function postJson(url, body) {
@@ -924,19 +931,163 @@
   window.cancelSolutionJob = function () { solutionCancel = true; };
   window.resumeSolutionJob = function () { startSolutionJob(true); };
   let solutionChunks = [];
+  async function finishSolution(job, box) {
+    const records = recordsFromItems(job.items || []);
+    if (!records.length) {
+      writeJob(null);
+      if (box) box.innerHTML = '<p class="admin-note error">পুরো বই ঘুরেও কোনো অনুশীলনী পাওয়া যায়নি। PDF আপলোড আছে কিনা দেখুন, অথবা একটু পরে আবার চেষ্টা করুন।</p>';
+      return;
+    }
+    catalog.solutions = Object.assign({}, catalog.solutions || {}, { [job.bookId]: records });
+    try {
+      await saveCatalog();
+      writeJob(null);
+      if (box) box.innerHTML = `<p class="admin-note">${bnNum(records.length)}টি প্রশ্নসহ পুরো সমাধান বই সংরক্ষণ হয়েছে। শ্রেণী পেজের সমাধানে এখন এটি দেখা যাবে।</p>`;
+    } catch (error) {
+      writeJob(job);
+      if (box) box.innerHTML = `<p class="admin-note error">সমাধান তৈরী হয়েছে, কিন্তু সেভ হয়নি: ${esc(error.message)}</p>`;
+    }
+  }
+  async function askSolutionSlice(job, from, to, pdfBase64) {
+    try {
+      return await postJson('/api/solution-job', { pdfBase64: pdfBase64, startPage: from, endPage: to, bookTitle: job.title, className: job.className });
+    } catch (_) {
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      try {
+        return await postJson('/api/solution-job', { pdfBase64: pdfBase64, startPage: from, endPage: to, bookTitle: job.title, className: job.className });
+      } catch (_) {
+        return { items: [] };
+      }
+    }
+  }
+  async function solveLocalPdf(job, bytes, box) {
+    await loadPdfLib();
+    const doc = await window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+    job.kind = 'pdf';
+    job.pageCount = Math.min(doc.getPageCount(), 180);
+    if (job.nextPage < 1 || job.nextPage > job.pageCount) job.nextPage = 1;
+    while (job.nextPage <= job.pageCount) {
+      if (solutionCancel) {
+        writeJob(job);
+        if (box) box.innerHTML = '<p class="admin-note warn">সমাধান তৈরী থামানো হয়েছে। পরে “চালিয়ে যান” চাপতে পারবেন।</p>';
+        return;
+      }
+      const end = Math.min(job.pageCount, job.nextPage + 3);
+      if (box) box.innerHTML = progressHtml(job, `${job.title} — পুরো বই থেকে সমাধান তৈরী হচ্ছে…`);
+      const slices = [];
+      const combined = await slicePagesBase64(doc, job.nextPage, end);
+      if (combined) slices.push([job.nextPage, end, combined]);
+      else {
+        for (let page = job.nextPage; page <= end; page += 1) {
+          const one = await slicePagesBase64(doc, page, page);
+          if (one) slices.push([page, page, one]);
+        }
+      }
+      for (const slice of slices) {
+        if (solutionCancel) break;
+        const data = await askSolutionSlice(job, slice[0], slice[1], slice[2]);
+        job.items = dedupeItems((job.items || []).concat(data.items || []));
+      }
+      job.nextPage = end + 1;
+      writeJob(job);
+    }
+    if (!solutionCancel) await finishSolution(job, box);
+  }
+  async function solveLocalImages(job, images, box) {
+    job.kind = 'html';
+    job.pageCount = images.length;
+    if (job.nextPage < 1 || job.nextPage > job.pageCount) job.nextPage = 1;
+    while (job.nextPage <= job.pageCount) {
+      if (solutionCancel) {
+        writeJob(job);
+        if (box) box.innerHTML = '<p class="admin-note warn">সমাধান তৈরী থামানো হয়েছে। পরে “চালিয়ে যান” চাপতে পারবেন।</p>';
+        return;
+      }
+      if (box) box.innerHTML = progressHtml(job, `${job.title} — ছবি থেকে সমাধান তৈরী হচ্ছে…`);
+      const image = await imageBase64(images[job.nextPage - 1]);
+      let data = { items: [] };
+      if (image) {
+        try {
+          data = await postJson('/api/read-book', { action: 'solve-image', imageBase64: image, mimeType: 'image/jpeg', bookTitle: job.title, className: job.className, part: job.nextPage });
+        } catch (_) {}
+      }
+      job.items = dedupeItems((job.items || []).concat(data.items || []));
+      job.nextPage += 1;
+      writeJob(job);
+    }
+    if (!solutionCancel) await finishSolution(job, box);
+  }
+  async function solveLocalText(job, files, box) {
+    const text = files.map((file) => new TextDecoder('utf-8').decode(file.bytes instanceof ArrayBuffer ? file.bytes : new Uint8Array(file.bytes))).join('\n');
+    solutionChunks = [];
+    for (let i = 0; i < text.length && solutionChunks.length < 40; i += 6500) solutionChunks.push(text.slice(i, i + 7500));
+    job.kind = 'html';
+    job.pageCount = solutionChunks.length;
+    if (job.nextPage < 1 || job.nextPage > job.pageCount) job.nextPage = 1;
+    while (job.nextPage <= job.pageCount) {
+      if (solutionCancel) {
+        writeJob(job);
+        if (box) box.innerHTML = '<p class="admin-note warn">সমাধান তৈরী থামানো হয়েছে। পরে “চালিয়ে যান” চাপতে পারবেন।</p>';
+        return;
+      }
+      if (box) box.innerHTML = progressHtml(job, `${job.title} — লেখা থেকে সমাধান তৈরী হচ্ছে…`);
+      let data = { items: [] };
+      try {
+        data = await postJson('/api/read-book', { action: 'solve-plain', text: solutionChunks[job.nextPage - 1] || '', bookTitle: job.title, className: job.className, part: job.nextPage });
+      } catch (_) {}
+      job.items = dedupeItems((job.items || []).concat(data.items || []));
+      job.nextPage += 1;
+      writeJob(job);
+    }
+    if (!solutionCancel) await finishSolution(job, box);
+  }
+  window.cancelSolutionJob = function () { solutionCancel = true; };
+  window.resumeSolutionJob = function () { startSolutionJob(true); };
   window.startSolutionJob = async function (resume) {
     if (!adminSession.loggedIn) return alert('আগে লগইন করুন।');
     let job = resume ? readJob() : null;
+    let pickedFiles = [];
     if (!job) {
       const classId = document.getElementById('solutionClassSelect')?.value || '';
       const bookId = document.getElementById('solutionBookSelect')?.value || '';
       const book = findBook(bookId) || appBook(bookId);
-      if (!classId || !book || !book.link) return alert('লিংকসহ একটি বই নির্বাচন করুন।');
-      if (!confirm('সমাধান তৈরী হতে কয়েক মিনিট লাগতে পারে। পেজ বন্ধ করবেন না। কম্পিউটারে করা ভালো। চালু করবেন?')) return;
-      job = { bookId: bookId, classId: classId, url: book.link, title: book.title, className: classLabel(classId), kind: '', pageCount: 0, nextPage: 1, items: [], fileUri: '' };
+      let stored = null;
+      try { stored = await getBookFiles(bookId); } catch (_) {}
+      pickedFiles = stored && stored.files ? stored.files : [];
+      const hasLocal = pickedFiles.some((file) => fileKind(file));
+      if (!classId || !book || (!book.link && !hasLocal)) return alert('লিংক বা PDF/JPG/TXT ফাইলসহ একটি বই নির্বাচন করুন।');
+      if (!confirm('পুরো বইয়ের সমাধান তৈরী হতে ১০–২০ মিনিট লাগতে পারে। পেজ বন্ধ করবেন না। চালু করবেন?')) return;
+      job = { bookId: bookId, classId: classId, url: book.link || '', title: book.title, className: classLabel(classId), kind: hasLocal ? 'local' : '', pageCount: 0, nextPage: 1, items: [], fileUri: '' };
+    } else {
+      try {
+        const stored = await getBookFiles(job.bookId);
+        pickedFiles = stored && stored.files ? stored.files : [];
+      } catch (_) {}
     }
     solutionCancel = false;
     const box = document.getElementById('solutionProgress');
+    const pdf = pickedFiles.find((file) => fileKind(file) === 'pdf');
+    if (pdf) {
+      if (box) box.innerHTML = '<div class="solution-progress">আপলোড করা PDF খোলা হচ্ছে… পুরো বই দেখা হবে।</div>';
+      try { await solveLocalPdf(job, pdf.bytes, box); }
+      catch (error) { if (box) box.innerHTML = `<p class="admin-note error">${esc(error.message || 'সমাধান তৈরী করা যায়নি।')}</p>`; }
+      return;
+    }
+    const images = pickedFiles.filter((file) => fileKind(file) === 'image');
+    if (images.length) {
+      if (box) box.innerHTML = '<div class="solution-progress">আপলোড করা ছবি থেকে সমাধান তৈরী হচ্ছে…</div>';
+      await solveLocalImages(job, images, box);
+      return;
+    }
+    const texts = pickedFiles.filter((file) => fileKind(file) === 'txt');
+    if (texts.length) {
+      await solveLocalText(job, texts, box);
+      return;
+    }
+    if (!job.url) {
+      if (box) box.innerHTML = '<p class="admin-note error">এই বইয়ে লিংক বা ফাইল নেই।</p>';
+      return;
+    }
     if (box) box.innerHTML = '<div class="solution-progress">সেভ করা লিংক থেকে বই পড়া হচ্ছে…</div>';
     try {
       const prep = await postJson('/api/read-book', { action: 'prepare', url: job.url, bookTitle: job.title, className: job.className });
@@ -946,63 +1097,42 @@
         job.pageCount = solutionChunks.length;
       } else {
         solutionChunks = [];
-        job.pageCount = Math.min(prep.pageCount || 40, 220);
+        job.pageCount = Math.min(prep.pageCount || 120, 220);
         job.fileUri = prep.fileUri || job.fileUri || '';
         job.mimeType = prep.mimeType || 'application/pdf';
       }
-      if (!job.pageCount) throw new Error('এই লিংক থেকে পড়ার মতো লেখা পাওয়া যায়নি।');
+      if (!job.pageCount) throw new Error('এই লিংক থেকে পুরো বই পড়া যায়নি। সেটিংস থেকে PDF আপলোড করলে পুরো সমাধান তৈরী হবে।');
       if (job.nextPage < 1) job.nextPage = 1;
-      if (job.nextPage > job.pageCount) job.nextPage = 1;
     } catch (error) {
       if (box) box.innerHTML = `<p class="admin-note error">${esc(error.message)}</p>`;
       return;
     }
-    let emptyStreak = 0;
     while (job.nextPage <= job.pageCount) {
       if (solutionCancel) {
         writeJob(job);
         if (box) box.innerHTML = '<p class="admin-note warn">সমাধান তৈরী থামানো হয়েছে। পরে “চালিয়ে যান” চাপতে পারবেন।</p>';
         return;
       }
-      if (box) box.innerHTML = progressHtml(job, `${job.title} থেকে প্রশ্ন ও উত্তর তৈরী হচ্ছে…`);
+      if (box) box.innerHTML = progressHtml(job, `${job.title} থেকে পুরো সমাধান তৈরী হচ্ছে…`);
       try {
         let data;
         if (job.kind === 'html') {
-          const text = solutionChunks[job.nextPage - 1] || '';
-          data = await postJson('/api/read-book', { action: 'solve-text', url: job.url, text: text, bookTitle: job.title, className: job.className, part: job.nextPage });
+          data = await postJson('/api/read-book', { action: 'solve-text', url: job.url, text: solutionChunks[job.nextPage - 1] || '', bookTitle: job.title, className: job.className, part: job.nextPage });
           job.nextPage += 1;
         } else {
           const end = Math.min(job.pageCount, job.nextPage + 3);
           data = await postJson('/api/read-book', { action: 'solve-pdf', url: job.url, fileUri: job.fileUri || '', mimeType: job.mimeType || 'application/pdf', startPage: job.nextPage, endPage: end, bookTitle: job.title, className: job.className });
           job.nextPage = end + 1;
         }
-        const found = (data.items || []).length;
-        emptyStreak = found ? 0 : emptyStreak + 1;
         job.items = dedupeItems((job.items || []).concat(data.items || []));
         writeJob(job);
-        if (emptyStreak >= 2 && job.nextPage > 16 && job.items.length) break;
-        if (emptyStreak >= 3 && job.nextPage > 24 && !job.items.length) break;
       } catch (error) {
         writeJob(job);
-        if (box) box.innerHTML = `<p class="admin-note error">${esc(error.message)} এ পর্যন্ত ${bnNum((job.items || []).length)}টি প্রশ্ন রাখা আছে।</p>`;
+        if (box) box.innerHTML = `<p class="admin-note error">${esc(error.message)} এ পর্যন্ত ${bnNum((job.items || []).length)}টি প্রশ্ন রাখা আছে। “চালিয়ে যান” চাপুন।</p>`;
         return;
       }
     }
-    const records = recordsFromItems(job.items || []);
-    if (!records.length) {
-      writeJob(null);
-      if (box) box.innerHTML = '<p class="admin-note error">এই লিংক থেকে কোনো প্রশ্ন পাওয়া যায়নি। লিংকটি সবার জন্য খোলা আছে কিনা দেখুন, অথবা Vercel-এ GEMINI_API_KEY সেট আছে কিনা দেখুন।</p>';
-      return;
-    }
-    catalog.solutions = Object.assign({}, catalog.solutions || {}, { [job.bookId]: records });
-    try {
-      await saveCatalog();
-      writeJob(null);
-      if (box) box.innerHTML = `<p class="admin-note">${bnNum(records.length)}টি প্রশ্নসহ সমাধান বই সংরক্ষণ হয়েছে। শ্রেণী পেজের সমাধানে এখন এটি দেখা যাবে।</p>`;
-    } catch (error) {
-      writeJob(job);
-      if (box) box.innerHTML = `<p class="admin-note error">সমাধান তৈরী হয়েছে, কিন্তু সেভ হয়নি: ${esc(error.message)}</p>`;
-    }
+    await finishSolution(job, box);
   };
 
   renderNav();
