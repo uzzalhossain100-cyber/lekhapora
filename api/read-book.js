@@ -419,7 +419,28 @@ module.exports = async function handler(req, res) {
     const body = await readBody(req);
     const action = String(body.action || 'probe');
     const admin = readSession(req);
-    if (!['answer', 'open'].includes(action) && !admin) return send(res, 401, { error: 'আগে এডমিন লগইন করুন।' });
+    if (!['answer', 'open', 'answer-image', 'answer-text'].includes(action) && !admin) return send(res, 401, { error: 'আগে এডমিন লগইন করুন।' });
+    const bookTitleEarly = String(body.bookTitle || 'বই').slice(0, 80);
+    const classNameEarly = String(body.className || 'শ্রেণী').slice(0, 60);
+    if (action === 'answer-image' || action === 'answer-text') {
+      const question = String(body.question || '').trim().slice(0, 1200);
+      if (!question) return send(res, 400, { error: 'প্রশ্ন লিখুন।' });
+      if (action === 'answer-text') {
+        const text = String(body.text || '').slice(0, 12000);
+        if (text.length < 20) return send(res, 400, { error: 'ফাইলে পড়ার মতো লেখা নেই।' });
+        const prompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + classNameEarly + '। বই: ' + bookTitleEarly + '।\nশিক্ষার্থীর প্রশ্ন: ' + question + '\nনিচের পাঠ থেকে উত্তর দাও। বিষয়টি পাঠে থাকলে found=true। না থাকলে found=false। নিজের মন থেকে উত্তর বানাবে না। শুধু JSON: {"found":true,"answer":"উত্তর"}\n\nপাঠ:\n' + text;
+        const result = interpretAnswer(await gemini([{ text: prompt }], 1000));
+        if (!result.found) return send(res, 200, { found: false, answer: '' });
+        return send(res, 200, result);
+      }
+      const image = String(body.imageBase64 || '').replace(/^data:[^,]*,/, '');
+      if (image.length < 80 || image.length > 3500000) return send(res, 400, { error: 'ছবিটি খুব বড় বা খালি।' });
+      const mime = /^image\/(jpeg|png|webp)$/.test(String(body.mimeType || '')) ? String(body.mimeType) : 'image/jpeg';
+      const prompt = 'তুমি বাংলাদেশের স্কুল শিক্ষক। শ্রেণী: ' + classNameEarly + '। বই: ' + bookTitleEarly + '।\nশিক্ষার্থীর প্রশ্ন: ' + question + '\nসংযুক্ত ছবি বইয়ের পাতা। ছবি পড়ে উত্তর দাও। বিষয়টি ছবিতে থাকলে found=true। না থাকলে found=false। নিজের মন থেকে উত্তর বানাবে না। শুধু JSON: {"found":true,"answer":"উত্তর"}';
+      const result = interpretAnswer(await gemini([{ inline_data: { mime_type: mime, data: image } }, { text: prompt }], 1000));
+      if (!result.found) return send(res, 200, { found: false, answer: '' });
+      return send(res, 200, result);
+    }
     const url = assertPublicUrl(body.url || '');
     if (action === 'probe') {
       const source = await inspectLink(url);
