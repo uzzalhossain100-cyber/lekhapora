@@ -411,6 +411,170 @@
     const empty = `<div class="marked-empty"><div>📚</div><h2>${isSolution ? 'এই শ্রেণীর সমাধান এখনো তৈরি হয়নি' : 'এই শ্রেণীর বই এখনো যোগ করা হয়নি'}</h2><p>${isSolution ? 'এডমিন সেটিংস থেকে সমাধান তৈরি করলে এখানে দেখা যাবে।' : 'এডমিন বইয়ের লিংক সেভ করলে এখানে দেখা যাবে।'}</p></div>`;
     return `<div class="school-app"><div class="app-shell">${appHeader(`<b>${name}</b> › ${isSolution ? 'সমাধানের বই' : 'মূল বইয়ের তালিকা'}`)}<div class="app-panel"><div class="subject-heading"><h1>${isSolution ? 'সমাধানের বই নির্বাচন করুন' : 'বই নির্বাচন করুন'}</h1><p>${isSolution ? 'যে বইয়ের সমাধান দেখতে চান সেটিতে ক্লিক করুন।' : 'যে মূল বইটি পড়তে চান সেটিতে ক্লিক করুন।'}</p></div><div class="app-subject-grid">${cards || empty}</div></div></div></div>`;
   }
+
+  function isEnglishBook(bookId) {
+    if (!bookId) return false;
+    if (bookId === 'english') return true;
+    const book = typeof window.appBook === 'function' ? window.appBook(bookId) : null;
+    return /english|ইংরেজি/i.test(String((book && book.title) || ''));
+  }
+  function bookVoiceLang(bookId) {
+    return isEnglishBook(bookId) ? 'en-US' : 'bn-BD';
+  }
+  function directBookUrl(link) {
+    const value = String(link || '');
+    const share = value.match(/^(https?:\/\/[^/]+)\/index\.php\/s\/([^/?#]+)/i);
+    if (share) return share[1] + '/index.php/s/' + share[2] + '/download';
+    return value;
+  }
+  function viewableBookUrl(link) {
+    const value = String(link || '');
+    if (!value) return '';
+    const driveFile = value.match(/drive\.google\.com\/file\/d\/([^/?#]+)/);
+    if (driveFile) return 'https://drive.google.com/file/d/' + driveFile[1] + '/preview';
+    const driveId = value.match(/[?&]id=([^&#]+)/);
+    if (driveId && /google\.com|googleusercontent\.com/.test(value)) return 'https://drive.google.com/file/d/' + driveId[1] + '/preview';
+    if (/drive\.google\.com\/file\/d\/.+\/preview/.test(value)) return value;
+    const download = directBookUrl(value);
+    if (download !== value || /\.pdf($|\?)/i.test(value)) {
+      return 'https://docs.google.com/viewer?embedded=true&url=' + encodeURIComponent(download);
+    }
+    return value;
+  }
+  let viewerState = null;
+  async function loadPdfJs() {
+    if (window.pdfjsLib) return window.pdfjsLib;
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('PDF ভিউয়ার লোড হয়নি।'));
+      document.head.appendChild(script);
+    });
+    if (!window.pdfjsLib) throw new Error('PDF ভিউয়ার লোড হয়নি।');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    return window.pdfjsLib;
+  }
+  async function renderViewerPage(page) {
+    const host = document.getElementById('localBookViewer');
+    if (!viewerState || !host || appState.bookId !== viewerState.bookId) return;
+    const total = viewerState.doc.numPages;
+    const next = Math.max(1, Math.min(total, page || 1));
+    viewerState.page = next;
+    host.innerHTML = '<div class="book-viewer"><div class="book-viewer-bar"><button type="button" onclick="stepBookPage(-1)">← আগের পাতা</button><span>পৃষ্ঠা ' + bnNum(next) + ' / ' + bnNum(total) + '</span><button type="button" onclick="stepBookPage(1)">পরের পাতা →</button></div><div class="book-viewer-canvas"><canvas id="bookPageCanvas"></canvas></div></div>';
+    const pdfPage = await viewerState.doc.getPage(next);
+    const canvas = document.getElementById('bookPageCanvas');
+    if (!canvas) return;
+    const base = pdfPage.getViewport({ scale: 1 });
+    const width = Math.max(320, (host.clientWidth || 800) - 24);
+    const viewport = pdfPage.getViewport({ scale: width / base.width });
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
+  }
+  window.stepBookPage = function (delta) {
+    if (!viewerState) return;
+    renderViewerPage(viewerState.page + delta);
+  };
+  async function renderPdfBytes(host, bytes, bookId) {
+    const lib = await loadPdfJs();
+    const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    const doc = await lib.getDocument({ data: data }).promise;
+    viewerState = { doc: doc, page: 1, bookId: bookId };
+    await renderViewerPage(1);
+  }
+  function renderImagePages(host, images) {
+    const html = images.map((file, index) => {
+      const url = URL.createObjectURL(new Blob([file.bytes], { type: file.type || 'image/jpeg' }));
+      return '<img src="' + url + '" alt="পৃষ্ঠা ' + (index + 1) + '">';
+    }).join('');
+    host.innerHTML = '<div class="book-viewer"><div class="book-viewer-bar"><span>আপলোড করা ছবি</span></div><div class="book-viewer-canvas">' + html + '</div></div>';
+  }
+  async function mountBookViewer(bookId) {
+    const host = document.getElementById('localBookViewer');
+    if (!host) return;
+    host.innerHTML = '<p style="padding:16px">বই খোলা হচ্ছে…</p>';
+    try {
+      const row = await getBookFiles(bookId);
+      const files = row && row.files ? row.files : [];
+      const pdf = files.find((file) => fileKind(file) === 'pdf');
+      if (pdf) {
+        await renderPdfBytes(host, pdf.bytes, bookId);
+        return;
+      }
+      const images = files.filter((file) => fileKind(file) === 'image');
+      if (images.length) {
+        renderImagePages(host, images);
+        return;
+      }
+    } catch (error) {
+      try {
+        const row = await getBookFiles(bookId);
+        const pdf = row && row.files && row.files.find((file) => fileKind(file) === 'pdf');
+        if (pdf) {
+          const url = URL.createObjectURL(new Blob([pdf.bytes], { type: 'application/pdf' }));
+          host.innerHTML = '<iframe src="' + url + '" title="বই" style="width:100%;height:100%;border:0;background:#fff"></iframe>';
+          return;
+        }
+      } catch (_) {}
+      host.innerHTML = '<p style="padding:16px">' + esc(error.message || 'বই খোলা যায়নি।') + '</p>';
+    }
+    if (!document.getElementById('localBookViewer')) return;
+    const book = appBook(bookId);
+    const remote = viewableBookUrl(book && (book.link || book.preview));
+    const open = directBookUrl(book && book.link);
+    if (!remote) {
+      host.innerHTML = '<p style="padding:16px">এই বইয়ের লিংক বা PDF সেভ করা নেই। সেটিংস থেকে URL বা PDF দিন।</p>';
+      return;
+    }
+    host.innerHTML = '<div class="book-viewer"><div class="book-viewer-bar"><a href="' + esc(open || remote) + '" target="_blank" rel="noopener">↗ নতুন ট্যাবে পুরো বই</a></div><iframe src="' + esc(remote) + '" title="' + esc((book && book.title) || 'বই') + '" style="width:100%;height:100%;border:0;background:#fff"></iframe></div>';
+  }
+  function solutionContextForQuestion(bookId, query) {
+    const set = appSet(bookId) || [];
+    const phrase = plain(query).toLowerCase();
+    const words = phrase.split(' ').filter((word) => word.length > 1);
+    const ranked = set.map((item) => {
+      if (isWeakAnswer(item.a)) return null;
+      const question = plain(item.t).toLowerCase();
+      const answer = plain(item.a).toLowerCase();
+      let score = 0;
+      if (phrase && (question.includes(phrase) || phrase.includes(question))) score += 80;
+      words.forEach((word) => {
+        if (question.includes(word)) score += 12;
+        if (answer.includes(word)) score += 6;
+      });
+      return { item: item, score: score };
+    }).filter(Boolean).sort((a, b) => b.score - a.score);
+    if (!ranked.some((row) => row.score >= 12)) return '';
+    return ranked.filter((row) => row.score > 0).slice(0, 8).map((row) => {
+      const item = row.item;
+      return 'অধ্যায়: ' + plain(item.l) + '\nপ্রশ্ন: ' + plain(item.t) + '\nউত্তর: ' + plain(item.a);
+    }).join('\n\n').slice(0, 14000);
+  }
+  function looksUnanswered(answer) {
+    const text = plain(answer);
+    return !isRealAnswer(text) || /এই বইয়ে নেই|বইয়ে পাওয়া যায়নি|উত্তর নেই|not found|cannot find/i.test(text);
+  }
+  async function answerFromSavedBook(book, query) {
+    const context = solutionContextForQuestion(book.id, query);
+    if (!context) return '';
+    const response = await fetch('/api/generate-answer-v2', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: query,
+        bookTitle: book.title,
+        context: context,
+        externalFallback: false,
+        answerLanguage: isEnglishBook(book.id) ? 'en' : 'bn'
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return '';
+    const answer = String(data.answer || '');
+    return looksUnanswered(answer) ? '' : answer;
+  }
+
   function customBookScreen() {
     const book = appBook(appState.bookId);
     if (!book) return classesMarkup();
@@ -418,7 +582,7 @@
     const set = appSet(appState.bookId) || [];
     if (appState.screen === 'reader') {
       const preview = book.preview || book.link;
-      return `<div class="school-app"><div class="app-shell">${appHeader(`<b>${name}</b> › ${esc(book.title)} › মূল বই`)}<div class="reader-page"><div class="reader-frame">${preview ? `<iframe src="${esc(preview)}" title="${esc(book.title)} সম্পূর্ণ বই" loading="eager"></iframe>` : '<p style="padding:16px">এই বইয়ের প্রিভিউ লিংক নেই।</p>'}</div><aside class="reader-side"><div class="side-title"><h2>অনুশীলনী সূচি</h2><p>প্রশ্নে ক্লিক করে সমাধানে যান</p></div><div class="side-scroll">${set.length ? set.map((item, index) => `<button class="reader-question" onclick="appGo('solutions',{bookId:'${book.id}',mode:'solutions',solutionIndex:${index}})"><small>পৃষ্ঠা ${bnNum(item.p)} · প্রশ্ন ${esc(item.q)}</small>${item.l}</button>`).join('') : '<p style="padding:10px;color:#648075">এই বইয়ের সমাধান এখনো তৈরি হয়নি।</p>'}</div>${book.link ? `<a class="reader-fallback" href="${esc(book.link)}" target="_blank" rel="noopener">↗ নতুন ট্যাবে বড় করে পড়ুন</a>` : ''}</aside></div></div></div>`;
+      return `<div class="school-app"><div class="app-shell">${appHeader(`<b>${name}</b> › ${esc(book.title)} › মূল বই`)}<div class="reader-page"><div class="reader-frame" id="localBookViewer"><p style="padding:16px">বই খোলা হচ্ছে…</p></div><aside class="reader-side"><div class="side-title"><h2>অনুশীলনী সূচি</h2><p>প্রশ্নে ক্লিক করে সমাধানে যান</p></div><div class="side-scroll">${set.length ? set.map((item, index) => `<button class="reader-question" onclick="appGo('solutions',{bookId:'${book.id}',mode:'solutions',solutionIndex:${index}})"><small>পৃষ্ঠা ${bnNum(item.p)} · প্রশ্ন ${esc(item.q)}</small>${item.l}</button>`).join('') : '<p style="padding:10px;color:#648075">এই বইয়ের সমাধান এখনো তৈরি হয়নি।</p>'}</div>${book.link ? `<a class="reader-fallback" href="${esc(directBookUrl(book.link))}" target="_blank" rel="noopener">↗ নতুন ট্যাবে বড় করে পড়ুন</a>` : ''}</aside></div></div></div>`;
     }
     const index = Number.isInteger(appState.solutionIndex) && set[appState.solutionIndex] ? appState.solutionIndex : 0;
     if (!set.length) {
@@ -476,32 +640,61 @@
     if (screen === 'books') { root.innerHTML = booksMarkup(); return; }
     if ((screen === 'reader' || screen === 'solutions') && appState.classId && appState.classId !== 'class-3') {
       root.innerHTML = customBookScreen();
+      if (screen === 'reader') setTimeout(() => mountBookViewer(appState.bookId), 20);
       if (screen === 'solutions') setTimeout(() => { const el = document.getElementById(`full-solution-${appState.solutionIndex || 0}`); if (el) el.scrollIntoView({ block: 'nearest' }); }, 30);
       return;
     }
     if ((screen === 'reader' || screen === 'solutions') && appState.bookId && !BUILTIN_IDS.has(appState.bookId)) {
       root.innerHTML = customBookScreen();
+      if (screen === 'reader') setTimeout(() => mountBookViewer(appState.bookId), 20);
       return;
     }
     originalRenderSchoolApp();
   };
 
-  function searchFilters() {
+  function classPickMarkup() {
     const classes = allClasses();
-    const classId = appState.classId || '';
-    const books = classId ? booksForClass(classId, { publishedOnly: true }) : [];
-    return `<div class="search-filters"><label>শ্রেণী<select id="searchClassSelect" onchange="setSearchClass(this.value)">${optionList(classes, classId, 'শ্রেণী নির্বাচন করুন')}</select></label><label>বই<select id="searchBookSelect" onchange="setSearchBook(this.value)" ${classId ? '' : 'disabled'}>${optionList(books, appState.answerBookId || '', classId ? 'বই নির্বাচন করুন' : 'আগে শ্রেণী নির্বাচন করুন')}</select></label></div>`;
+    if (!appState.classId) {
+      const cards = classes.map((item, index) => `<button type="button" class="search-pick-card" onclick="pickSearchClass('${item.id}')"><span class="num">শ্রেণী ${classBadge(item.name, index)}</span><b>${esc(item.name)}</b><small>এই শ্রেণীর বই দেখুন</small></button>`).join('');
+      return `<p class="search-step-label">১. শ্রেণী নির্বাচন করুন</p><div class="search-pick-grid">${cards}</div>`;
+    }
+    const selected = classes.find((item) => item.id === appState.classId);
+    return `<div class="search-chosen"><button type="button" onclick="pickSearchClass('')">শ্রেণী: ${esc(selected ? selected.name : '')} · বদলান</button></div>`;
   }
+  function bookPickMarkup() {
+    if (!appState.classId) return '';
+    const books = booksForClass(appState.classId, { publishedOnly: true });
+    if (!appState.answerBookId) {
+      if (!books.length) return '<div class="search-start"><div>📚</div><h2>এই শ্রেণীতে এখনো বই নেই</h2><p>সেটিংস থেকে বইয়ের নাম ও লিংক সেভ করুন।</p></div>';
+      const cards = books.map((book) => `<button type="button" class="search-pick-card" onclick="pickSearchBook('${book.id}')"><span class="sub-icon">${book.icon || '📘'}</span><b>${esc(book.title)}</b><small>এই বই থেকে উত্তর</small></button>`).join('');
+      return `<p class="search-step-label">২. বই নির্বাচন করুন</p><div class="search-pick-grid">${cards}</div>`;
+    }
+    const selected = books.find((book) => book.id === appState.answerBookId) || appBook(appState.answerBookId);
+    return `<div class="search-chosen"><button type="button" onclick="pickSearchBook('')">বই: ${esc(selected ? selected.title : '')} · বদলান</button></div>`;
+  }
+  window.pickSearchClass = function (classId) {
+    appState = Object.assign({}, appState, { classId: classId || null, classNo: classId === 'class-3' ? 3 : null, answerBookId: '' });
+    appWriteUrl(true);
+    renderSchoolApp();
+  };
+  window.pickSearchBook = function (bookId) {
+    appState = Object.assign({}, appState, { answerBookId: bookId || '' });
+    appWriteUrl(true);
+    renderSchoolApp();
+  };
   window.searchPageMarkup = function () {
     const query = appState.searchQuery || '';
+    const english = isEnglishBook(appState.answerBookId);
     const ready = Boolean(String(query).trim() && appState.classId && appState.answerBookId);
-    return `<div class="school-app"><div class="app-shell search-page">${appHeader('<b>খুঁজুন</b>')}<div class="app-panel"><div class="subject-heading"><h1>প্রশ্ন খুঁজুন</h1><p>প্রথমে শ্রেণী, তারপর সেই শ্রেণীর বই নির্বাচন করুন। প্রশ্ন লিখুন বা ভয়েস দিন, তারপর নতুন প্রশ্ন তৈরী করুন চাপুন।</p></div>${searchFilters()}<div class="book-search-bar"><label class="search-field"><span>🔎</span><input id="bookSearchInput" value="${esc(query)}" oninput="activateGenerateAnswerButtonFromInput(this);setBookSearchQuery(this.value)" onkeyup="activateGenerateAnswerButtonFromInput(this)" placeholder="প্রশ্ন লিখুন…" autocomplete="off" aria-label="প্রশ্ন খুঁজুন"></label><div class="book-search-actions"><button class="voice-search-button" type="button" onclick="startVoiceBookSearch()" aria-label="ভয়েস দিয়ে প্রশ্ন খুঁজুন">🎙️ <span>ভয়েস</span></button><button id="generateAnswerButton" class="generate-answer-button" type="button" onclick="createBookAnswer()" ${ready ? '' : 'disabled'}>নতুন প্রশ্ন তৈরী করুন</button></div></div><p id="voiceSearchStatus" class="voice-search-status">মাইক্রোফোনে অনুমতি দিয়ে প্রশ্ন বলেও তৈরি করতে পারেন।</p><div id="answerBookPicker"></div><div id="generatedAnswerContainer">${generatedBookAnswerMarkup(query)}</div><div id="searchDynamicContent">${searchResultContentMarkup(query)}</div></div></div></div>`;
+    const question = appState.classId && appState.answerBookId
+      ? `<p class="search-step-label">৩. প্রশ্ন লিখুন বা ${english ? 'ইংরেজি' : 'বাংলা'} ভয়েসে বলুন</p><div class="book-search-bar"><label class="search-field"><span>🔎</span><input id="bookSearchInput" value="${esc(query)}" oninput="activateGenerateAnswerButtonFromInput(this);setBookSearchQuery(this.value)" onkeyup="activateGenerateAnswerButtonFromInput(this)" placeholder="${english ? 'Type your question…' : 'প্রশ্ন লিখুন…'}" autocomplete="off" aria-label="প্রশ্ন"></label><div class="book-search-actions"><button class="voice-search-button" type="button" onclick="startVoiceBookSearch()" aria-label="ভয়েস">${english ? '🎙️ English' : '🎙️ বাংলা ভয়েস'}</button><button id="generateAnswerButton" class="generate-answer-button" type="button" onclick="createBookAnswer()" ${ready ? '' : 'disabled'}>উত্তর তৈরী করুন</button></div></div><p id="voiceSearchStatus" class="voice-search-status">${english ? 'The question and answer will be spoken in English.' : 'প্রশ্ন ও উত্তর বাংলা ভয়েসে হবে।'}</p>`
+      : '';
+    return `<div class="school-app"><div class="app-shell search-page">${appHeader('<b>খুঁজুন</b>')}<div class="app-panel"><div class="subject-heading"><h1>প্রশ্ন খুঁজুন</h1><p>প্রথমে শ্রেণী, তারপর সেই শ্রেণীর বই বেছে নিন। তারপর প্রশ্ন লিখুন বা ভয়েস দিন এবং উত্তর তৈরী করুন চাপুন।</p></div>${classPickMarkup()}${bookPickMarkup()}${question}<div id="answerBookPicker"></div><div id="generatedAnswerContainer">${generatedBookAnswerMarkup(query)}</div><div id="searchDynamicContent">${searchResultContentMarkup(query)}</div></div></div></div>`;
   };
   window.searchResultContentMarkup = function (query) {
-    if (!appState.classId || !appState.answerBookId) return '<div class="search-start"><div>📚</div><h2>আগে শ্রেণী ও বই নির্বাচন করুন</h2><p>তারপর প্রশ্ন লিখুন বা ভয়েস দিন এবং “নতুন প্রশ্ন তৈরী করুন” চাপুন।</p></div>';
-    if (!query) return '<div class="search-start"><div>🔎</div><h2>প্রশ্ন লিখে অথবা বলে খুঁজুন</h2><p>নির্বাচিত বই থেকে প্রশ্ন লিখলে সংরক্ষিত সমাধানও এখানে দেখা যাবে।</p></div>';
+    if (!appState.classId || !appState.answerBookId || !query) return '';
     const results = searchBookAnswers(query, appState.answerBookId);
-    return results.length ? `<div class="search-result-count">${bnNum(results.length)}টি প্রাসঙ্গিক প্রশ্ন ও উত্তর পাওয়া গেছে</div><div class="search-result-list">${results.map(searchResultMarkup).join('')}</div>` : '<div class="search-start"><div>📚</div><h2>সংরক্ষিত সমাধানে এই প্রশ্নের মিল পাওয়া যায়নি</h2><p>“নতুন প্রশ্ন তৈরী করুন” চাপলে নির্বাচিত বই থেকে AI উত্তর তৈরি করবে।</p></div>';
+    return results.length ? `<div class="search-result-count">${bnNum(results.length)}টি প্রাসঙ্গিক প্রশ্ন ও উত্তর পাওয়া গেছে</div><div class="search-result-list">${results.map(searchResultMarkup).join('')}</div>` : '';
   };
   window.updateGenerateAnswerButton = function (query) {
     const button = document.getElementById('generateAnswerButton');
@@ -511,19 +704,32 @@
     button.toggleAttribute('disabled', !enabled);
     button.setAttribute('aria-disabled', String(!enabled));
   };
-  window.setSearchClass = function (classId) {
-    const books = booksForClass(classId, { publishedOnly: true });
-    const answerBookId = books.some((book) => book.id === appState.answerBookId) ? appState.answerBookId : (books[0] ? books[0].id : '');
-    appState = Object.assign({}, appState, { classId: classId || null, classNo: classId === 'class-3' ? 3 : null, answerBookId: answerBookId });
-    appWriteUrl(true);
-    renderSchoolApp();
+  window.setSearchClass = function (classId) { window.pickSearchClass(classId); };
+  window.setSearchBook = function (bookId) { window.pickSearchBook(bookId); };
+  window.speechLanguageFor = function (bookId) {
+    return bookVoiceLang(bookId || appState.answerBookId || appState.generatedBookId || appState.bookId);
   };
-  window.setSearchBook = function (bookId) {
-    appState = Object.assign({}, appState, { answerBookId: bookId || '' });
-    appWriteUrl(true);
-    updateGenerateAnswerButton(appState.searchQuery || '');
-    renderSearchLiveResults();
+  window.startVoiceBookSearch = function () {
+    if (!appState.answerBookId) return setVoiceSearchStatus('আগে বই নির্বাচন করুন।');
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) return setVoiceSearchStatus('এই ব্রাউজারে ভয়েস সুবিধা নেই। প্রশ্নটি লিখে দিন।');
+    const english = isEnglishBook(appState.answerBookId);
+    const recognition = new Recognition();
+    recognition.lang = english ? 'en-US' : 'bn-BD';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => setVoiceSearchStatus(english ? 'Listening… say your question in English.' : 'শুনছি… বাংলায় প্রশ্নটি বলুন।');
+    recognition.onresult = (event) => {
+      const spoken = event.results[0][0].transcript;
+      const input = document.getElementById('bookSearchInput');
+      if (input) input.value = spoken;
+      setBookSearchQuery(spoken);
+      updateGenerateAnswerButton(spoken);
+    };
+    recognition.onerror = (event) => setVoiceSearchStatus(event.error === 'not-allowed' ? 'মাইক্রোফোন ব্যবহারের অনুমতি দিন।' : 'ভয়েস শোনা যায়নি। আবার চেষ্টা করুন বা প্রশ্নটি লিখুন।');
+    try { recognition.start(); } catch (_) { setVoiceSearchStatus('একটু পরে আবার ভয়েস চালু করুন।'); }
   };
+
   window.createBookAnswer = async function () {
     const query = String(appState.searchQuery || '').trim();
     if (!appState.classId) return setVoiceSearchStatus('প্রথমে শ্রেণী নির্বাচন করুন।');
@@ -782,6 +988,14 @@
       if (isRealAnswer(saved)) {
         setVoiceSearchStatus('');
         finishAnswer(requestId, saved);
+        return;
+      }
+      setVoiceSearchStatus(isEnglishBook(bookId) ? 'Creating an answer from this book…' : 'নির্বাচিত বইয়ের সমাধান থেকে উত্তর তৈরি হচ্ছে…');
+      const taught = await answerFromSavedBook(book, query);
+      if (appState.aiRequestId !== requestId) return;
+      if (isRealAnswer(taught)) {
+        setVoiceSearchStatus('');
+        finishAnswer(requestId, taught);
         return;
       }
       let localAnswer = '';
