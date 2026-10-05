@@ -3,6 +3,7 @@
 
   const BUILTIN_IDS = new Set(['bangla', 'bangladesh', 'science', 'islam', 'math', 'english']);
   const PENDING_KEY = 'AmarBoi-admin-catalog-pending-v1';
+  const LOCAL_KEY = 'AmarBoi-catalog-local-v1';
   const JOB_KEY = 'AmarBoi-solution-job-v1';
   const ICONS = ['📘', '📗', '📙', '📕', '📔', '📓', '📚', '✏️'];
   const ORDER = ['প্রথম', 'দ্বিতীয়', 'দ্বিতীয়', 'তৃতীয়', 'তৃতীয়', 'চতুর্থ', 'পঞ্চম', 'ষষ্ঠ', 'সপ্তম', 'অষ্টম', 'নবম', 'দশম', 'একাদশ', 'দ্বাদশ'];
@@ -402,18 +403,6 @@
     if (!book) return setVoiceSearchStatus('বইটি পাওয়া যায়নি।');
     const requestId = beginAnswer(book, query);
     try {
-      const context = solutionContext(bookId);
-      if (context) {
-        const response = await fetch('/api/generate-answer-v2', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: query, bookTitle: book.title, context: context, externalFallback: false, answerLanguage: answerLanguageForQuestion(query) })
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || 'AI উত্তর তৈরি করা যায়নি।');
-        finishAnswer(requestId, String(data.answer || ''));
-        return;
-      }
       if (!book.link) throw new Error('এই বইয়ের URL সেটিংসে সেভ করা নেই।');
       setVoiceSearchStatus('সেভ করা লিংক থেকে বই বা সাইট পড়া হচ্ছে…');
       const data = await postJson('/api/read-book', {
@@ -423,10 +412,24 @@
         bookTitle: book.title,
         className: classLabel(appState.classId)
       });
-      if (!data.found || !data.answer) throw new Error('এই লিংকের বই বা সাইটে প্রশ্নের উত্তর পাওয়া যায়নি। লিংকটি সবার জন্য খোলা আছে কিনা দেখুন।');
-      setVoiceSearchStatus('');
-      finishAnswer(requestId, data.answer);
-      return;
+      if (data.found && data.answer) {
+        setVoiceSearchStatus('');
+        finishAnswer(requestId, data.answer);
+        return;
+      }
+      const context = solutionContext(bookId);
+      if (context) {
+        const response = await fetch('/api/generate-answer-v2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: query, bookTitle: book.title, context: context, externalFallback: false, answerLanguage: answerLanguageForQuestion(query) })
+        });
+        const saved = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(saved.error || data.error || 'AI উত্তর তৈরি করা যায়নি।');
+        finishAnswer(requestId, String(saved.answer || ''));
+        return;
+      }
+      throw new Error(data.error || 'এই লিংকের বই বা সাইটে প্রশ্নের উত্তর পাওয়া যায়নি। বইয়ের যে পাতায় পাঠ আছে সেই লিংক দিন। লিংকটি সবার জন্য খোলা থাকতে হবে।');
     } catch (error) {
       finishAnswer(requestId, '', error.message || 'AI উত্তর তৈরি করা যায়নি।');
     }
@@ -447,32 +450,46 @@
     }
     renderNav();
   }
+  function catalogTime(value) {
+    const time = Date.parse(value && value.updatedAt);
+    return Number.isFinite(time) ? time : 0;
+  }
+  function catalogHasBooks(value) {
+    return Boolean(value && ((value.classes || []).length || (value.books || []).length));
+  }
+  function newerCatalog(left, right) {
+    if (!catalogHasBooks(left)) return catalogHasBooks(right) ? right : (left || right);
+    if (!catalogHasBooks(right)) return left;
+    return catalogTime(right) >= catalogTime(left) ? right : left;
+  }
+  function readStoredCatalog(key) {
+    try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { return null; }
+  }
   async function loadCatalog() {
+    let server = null;
     try {
       const response = await fetch(`/api/catalog?t=${Date.now()}`, { cache: 'no-store' });
       const data = await response.json();
-      if (data.catalog) catalog = data.catalog;
+      server = data.catalog || null;
       canPersist = Boolean(data.canPersist);
     } catch (_) {
       canPersist = false;
     }
-    if (adminSession.loggedIn) {
-      try {
-        const pending = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
-        if (pending && (Date.parse(pending.updatedAt || 0) > Date.parse(catalog.updatedAt || 0))) {
-          catalog = pending;
-          lastWarning = 'কিছু পরিবর্তন এখনো সার্ভারে ওঠেনি। আবার সেভ করলে চেষ্টা হবে।';
-        }
-      } catch (_) {}
-    }
+    catalog = newerCatalog(newerCatalog(server, readStoredCatalog(LOCAL_KEY)), readStoredCatalog(PENDING_KEY)) || catalog;
+    if (!canPersist && catalogHasBooks(catalog)) lastWarning = 'বই এই ব্রাউজারে সেভ আছে। অন্য ফোনে দেখাতে Vercel-এ GITHUB_TOKEN লাগবে।';
     syncAppSubjects();
   }
   async function saveCatalog() {
-    const data = await postJson('/api/catalog', { catalog: catalog });
-    catalog = data.catalog || catalog;
-    lastWarning = data.persisted ? '' : (data.warning || 'সার্ভারে সেভ হয়নি।');
+    const sent = catalog;
+    const data = await postJson('/api/catalog', { catalog: sent });
+    catalog = data.persisted && data.catalog ? data.catalog : sent;
+    if (!catalog.updatedAt) catalog.updatedAt = new Date().toISOString();
+    lastWarning = data.persisted ? '' : (data.warning || 'সার্ভারে সেভ হয়নি। এই ব্রাউজারে রাখা হয়েছে।');
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify(catalog)); } catch (_) {}
     if (data.persisted) localStorage.removeItem(PENDING_KEY);
-    else localStorage.setItem(PENDING_KEY, JSON.stringify(catalog));
+    else {
+      try { localStorage.setItem(PENDING_KEY, JSON.stringify(catalog)); } catch (_) {}
+    }
     syncAppSubjects();
     return data;
   }
@@ -553,7 +570,7 @@
       let note = 'লিংক সেভ হয়েছে।';
       try {
         const probe = await postJson('/api/read-book', { action: 'probe', url: link });
-        note = 'লিংক সেভ হয়েছে। ' + (probe.message || 'AI এই লিংক পড়তে পারবে।');
+        note = 'লিংক সেভ হয়েছে। ' + (probe.message || 'AI এই লিংক পড়তে পারবে।') + (probe.preview ? '\n\nপড়া লেখা: ' + probe.preview : '');
       } catch (probeError) {
         note = 'লিংক সেভ হয়েছে, কিন্তু এখন পড়া যায়নি: ' + (probeError.message || 'লিংক চেক করা যায়নি।');
       }
